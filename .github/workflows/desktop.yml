@@ -33,6 +33,9 @@ jobs:
       - if: runner.os == 'Windows'
         shell: pwsh
         run: Copy-Item src-tauri/target/release/aula-studio.exe src-tauri/target/release/AULA-Studio-Windows-x64.exe
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/source-archive.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: aula-studio-${{ matrix.platform }}
@@ -40,6 +43,7 @@ jobs:
             src-tauri/target/release/bundle/nsis/*setup.exe
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/AULA-Studio-Windows-x64.exe
+            dist/AULA-Studio-source.zip
           if-no-files-found: error
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -52,13 +56,15 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
-      - name: Upload native builds to preview release
+      - name: Publish release assets
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --prerelease --title "AULA Studio $RELEASE_TAG" --notes "Preview build. Built-in effects and battery work on Windows. Per-key hardware upload remains unresolved. macOS builds require hardware testing."
+            flags=()
+            if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease); else flags+=(--latest); fi
+            gh release create "$RELEASE_TAG" "${flags[@]}" --title "AULA Studio $RELEASE_TAG" --notes "Includes 2.4 GHz RGB effects, per-key colors, battery status, scalable pastel light/dark UI, editable color presets, and wired USB PNG/JPEG/GIF display uploads with clock sync. Lighting and display playback are confirmed on Windows. macOS Apple Silicon builds are provided but require hardware testing. GIF uploads require wired USB. Includes portable source. Unofficial community software; binaries are unsigned."
           fi
-          find artifacts -type f \( -name '*.exe' -o -name '*.dmg' \) -print0 | xargs -0 gh release upload "$RELEASE_TAG" --clobber
+          find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.zip' \) -print0 | xargs -0 gh release upload "$RELEASE_TAG" --clobber

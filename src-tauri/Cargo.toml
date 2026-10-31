@@ -1,7 +1,7 @@
 [package]
 name = "aula-studio"
-version = "0.3.0"
-description = "AULA F75 Max wireless lighting and battery"
+version = "1.0.0"
+description = "AULA F75 Max lighting, battery and wired display"
 edition = "2021"
 
 [build-dependencies]
