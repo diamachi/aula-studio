@@ -17,7 +17,7 @@ Unofficial community project; not affiliated with AULA or EPOMAKER.
 | Per-key editor, groups, rectangle selection and local saved layouts | Implemented in UI |
 | Per-key upload over 2.4 GHz | Confirmed working on the user's Windows keyboard in 0.2.1 |
 | macOS (Apple Silicon / M-series) | Native build provided; not hardware-tested |
-| TFT PNG/JPEG/GIF uploads over wired USB | Implemented; physical display confirmation pending |
+| TFT PNG/JPEG/GIF uploads over wired USB | Confirmed working on the user’s Windows keyboard |
 | Wired clock sync | Command acknowledgments verified on Windows |
 | Key remapping, Bluetooth configuration | Not implemented |
 
@@ -63,7 +63,8 @@ The **Sync clock** button sends this computer’s local time.
 
 Display transfers use `0C45:800A`, command usage page `FF13` and raw page `FF68`.
 Other batches are not assumed compatible. The clock exchange has been verified
-on the connected Windows keyboard; image/GIF output still needs visual confirmation.
+on the connected Windows keyboard. The user also confirmed image/GIF playback
+on the physical display. macOS display transfers still need hardware testing.
 See [display protocol notes](research/display-protocol.md).
 
 ## Build from source

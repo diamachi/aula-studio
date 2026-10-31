@@ -2,7 +2,7 @@
 
 The implementation follows the MIT-licensed [VitalyArt F75 Max driver](https://github.com/VitalyArt/Aula-F75-Max-Driver), specifically `AulaDevice.swift` and `DisplayEncoder.swift`. The upstream license is retained in `LICENSE.upstream`. The official F75 Max 1.0.0.5 layout independently specifies 128×128 pixels, a 256-byte header, 255 frames and one custom slot.
 
-On 2026-10-31 the connected Windows keyboard exposed VID/PID `0C45:800A`, page `FF13` with 64-byte feature reports, and page `FF68` with 4096-byte output and 64-byte input reports. The complete clock exchange returned the expected command-ready replies and time-payload echo. Physical image/GIF playback has not yet been confirmed.
+On 2026-10-31 the connected Windows keyboard exposed VID/PID `0C45:800A`, page `FF13` with 64-byte feature reports, and page `FF68` with 4096-byte output and 64-byte input reports. The complete clock exchange returned the expected command-ready replies and time-payload echo. The user subsequently confirmed that the uploaded image/GIF appeared correctly on the physical keyboard display using the 0.3.0 Windows test build. macOS hardware testing remains outstanding.
 
 Image stream: byte 0 frame count, bytes 1 onward frame delays in 2 ms ticks (1–255), image data beginning at offset 256. Each frame is 128×128 RGB565 little endian. Pad the complete stream to a multiple of 4096 bytes.
 
