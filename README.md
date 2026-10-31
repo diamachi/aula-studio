@@ -17,7 +17,9 @@ Unofficial community project; not affiliated with AULA or EPOMAKER.
 | Per-key editor, groups, rectangle selection and local saved layouts | Implemented in UI |
 | Per-key upload over 2.4 GHz | Confirmed working on the user's Windows keyboard in 0.2.1 |
 | macOS (Apple Silicon / M-series) | Native build provided; not hardware-tested |
-| TFT uploads, key remapping, Bluetooth configuration | Not implemented |
+| TFT PNG/JPEG/GIF uploads over wired USB | Implemented; physical display confirmation pending |
+| Wired clock sync | Command acknowledgments verified on Windows |
+| Key remapping, Bluetooth configuration | Not implemented |
 
 Version 0.2.1 was checked against an official-app USB capture. The user confirmed
 both the captured WASD-green sequence and the updated app's custom colors on the
@@ -48,6 +50,21 @@ The per-key editor supports clicks, drag-box selection, additive
 Shift/Ctrl/Command-drag, group presets, painting, turn-off, and undo. Changing
 the picker automatically paints selected keys locally; Apply sends the full layout. Switching to Effects and applying a built-in effect
 returns to ordinary lighting.
+
+## Mini display
+
+Connect a USB data cable and switch the keyboard to wired mode. Close the official
+driver, open **Mini display**, and choose a PNG, JPEG or GIF (up to 16 MB and
+4096×4096 source pixels). Choose Fit, Fill or Stretch, review the 128×128 first-frame
+preview, and click **Upload to keyboard**. Keep USB connected until completion.
+Uploads replace custom slot 1. Select the custom-image screen using the keyboard
+controls if needed. GIFs support at most 255 frames; delays are clamped to 2–510 ms.
+The **Sync clock** button sends this computer’s local time.
+
+Display transfers use `0C45:800A`, command usage page `FF13` and raw page `FF68`.
+Other batches are not assumed compatible. The clock exchange has been verified
+on the connected Windows keyboard; image/GIF output still needs visual confirmation.
+See [display protocol notes](research/display-protocol.md).
 
 ## Build from source
 

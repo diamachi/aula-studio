@@ -22,6 +22,7 @@ window.__TAURI_INTERNALS__ = {
     calls.push({ command, args });
     if (command === 'scan_receivers') return connected ? [{ id: 'test-receiver', name: 'F75 Max', interface: 3, usage: 97 }] : [];
     if (command === 'read_battery') return 84;
+    if (command === 'scan_display') return {connected:true,displayAvailable:true,message:'Wired display ready'};
     return null;
   },
 };
@@ -66,6 +67,15 @@ try {
   button('Save color A8C692 to preset 1').click(); await wait();
   assert.equal(JSON.parse(window.localStorage.getItem('aula.palette.v1'))[0], 'A8C692');
   assert.equal(window.document.querySelector('.swatches button').getAttribute('aria-label'), 'Preset 1, color A8C692');
+
+  button('Mini display').click(); await wait();
+  assert.match(window.document.querySelector('.display-connection').textContent, /Wired display ready/);
+  assert.equal(button('Upload to keyboard').disabled, true, 'An image is required before uploading');
+  button('Sync clock').click(); await wait();
+  const clock = calls.find(c => c.command === 'sync_display_clock');
+  assert.ok(clock && clock.args.time.year >= 2026, 'Clock sync sends the local date');
+  assert.match(window.document.querySelector('.display-notice').textContent, /Clock synced/);
+  button('Keyboard studio').click(); await wait();
 
   connected = false;
   button('Scan receivers').click(); await wait();
