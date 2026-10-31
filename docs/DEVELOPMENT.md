@@ -71,3 +71,15 @@ powershell -File scripts/source-archive.ps1
 ```
 
 Output: `dist/AULA-Studio-source.zip`. The script packages an explicit list of source, configuration, documentation and license files. It excludes private USB captures, vendor executables, toolchains, caches and generated dependencies. First-time dependency downloads require internet access.
+
+## Documentation screenshots
+
+The optional screenshot tool runs the built interface in a headless browser with a temporary profile. It mocks connection/battery data and image preparation; hardware-changing commands are disabled. It does not open the native app or capture the desktop.
+
+```sh
+npm install --prefix .tools/screenshots --no-package-lock playwright-core
+npm run build
+node scripts/capture-screenshots.mjs
+```
+
+The default browser path is Windows Edge. On another setup, set `BROWSER_PATH` to a compatible Chromium-based browser executable before running the script. Images are saved under `docs/screenshots/`. Playwright is local documentation tooling, not an application dependency.

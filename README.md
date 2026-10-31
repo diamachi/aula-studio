@@ -10,17 +10,23 @@ The app uses a native window on Windows and Apple Silicon macOS, built with Taur
 
 ## A look at the app
 
+Screenshots below show the actual interface in an isolated preview with example connection and battery data. Hardware access was disabled during capture.
+
 ### Connection, battery and lighting
 
 The top panel shows the selected receiver interface and keyboard-reported battery percentage. A green connection badge means the USB receiver is present; it does not confirm that the wireless keyboard is awake. Receiver checks run every five seconds, with battery refresh every 30 seconds while the app is visible or when requested manually.
 
 Choose an effect card or explore all **20 effects** in the effect chooser. Use the color area, hue slider, system picker or hex input, then adjust brightness, speed and direction. Click **Apply lighting** to send the settings.
 
+![AULA Studio dark interface showing receiver status, battery, RGB effects and color controls](docs/screenshots/lighting-dark.png)
+
 ### Per-key colors
 
 Open **Per-key colors** to paint individual keys or groups. Drag a rectangle across the keyboard to select several keys; hold **Shift, Ctrl or Command** while dragging to add to the selection. Group shortcuts, turn-off and undo controls make larger layouts easier to edit.
 
 Picking a color paints the selected keys in the editor. **Apply lighting** sends the layout to the keyboard. The outlined tab shows which editor is active. To return to ordinary lighting, switch to **Effects** and apply an effect.
+
+![AULA Studio light interface showing per-key colors, selected WASD keys and group controls](docs/screenshots/per-key-light.png)
 
 ### Mini display and clock
 
@@ -29,6 +35,8 @@ Connect a USB data cable, switch the keyboard to **wired mode**, and open **Mini
 Uploads replace custom image slot 1. Select the custom-image screen using the keyboard controls if needed. **Sync clock** sets the keyboard to this computer’s local time.
 
 **Image/GIF uploads require wired USB.** No working upload route was found over the 2.4 GHz receiver; see the [wireless display investigation](research/wireless-display-audit.md).
+
+![AULA Studio mini-display page showing a pastel mountain preview, image fit options, USB upload and clock sync](docs/screenshots/mini-display-dark.png)
 
 ### Appearance and saved colors
 
