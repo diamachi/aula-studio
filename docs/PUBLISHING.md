@@ -8,7 +8,7 @@ Open **Actions → Desktop builds → Run workflow** and choose the source ref. 
 
 ## Publish a version
 
-1. Update the matching version in `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/tauri.conf.json` and the sidebar in `src/main.tsx`.
+1. Run `node scripts/set-version.mjs 1.1.1` (substitute the intended version). This updates app metadata without changing dependencies. Never use a global version-string replacement in lockfiles.
 2. Run the checks in the [development guide](DEVELOPMENT.md) and verify the intended behavior on hardware. Record platform-specific testing limits.
 3. Commit the release source, then push a matching tag, for example:
 
@@ -30,3 +30,5 @@ The release job waits for both native builds, then uploads:
 GitHub also provides its standard tagged-source archives. The workflow currently uses `--clobber` when uploading assets, so rerunning a tagged release job can replace matching assets. Existing releases are not recreated if already present. Review the release text and downloads after completion; update the notes if the generic workflow description does not cover a version’s changes.
 
 CI success is not a hardware test. State which keyboard/firmware and platforms were tested, and retain the wired-only display upload limitation unless a wireless transport is independently verified.
+
+CI caches Rust dependencies per platform and runs Rust tests in the release profile so the native build can reuse them. Its explicit config skips the frontend build hook only after `test:ui` has built and checked the assets. Local desktop builds retain their usual automatic frontend build.

@@ -1,7 +1,7 @@
 {
   "name": "aula-studio",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "scripts": {
     "test:ui": "npm run build && node scripts/test-ui.mjs",

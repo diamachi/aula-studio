@@ -74,7 +74,7 @@ async fn apply_per_key(id: String, colors: Vec<protocol::KeyColor>, brightness: 
         let _guard = HID_LOCK.lock().map_err(|e| e.to_string())?;
         let api = HidApi::new().map_err(|e| e.to_string())?;
         let device = open(&api, &id)?;
-        if let Err(error) = transfer::send_custom(&device, &packets) {
+        if let Err(error) = transfer::send_configuration(&device, &packets) {
             let mut restored = true;
             for packet in restore_packets {
                 restored &= matches!(device.write(&packet), Ok(33));
@@ -93,7 +93,7 @@ async fn apply_sleep(id:String,settings:protocol::SleepSettings)->Result<(),Stri
         let _guard=HID_LOCK.lock().map_err(|e|e.to_string())?;
         let api=HidApi::new().map_err(|e|e.to_string())?;
         let device=open(&api,&id)?;
-        transfer::send_custom(&device,&[packet])
+        transfer::send_configuration(&device,&[packet])
     }).await.map_err(|e|e.to_string())?
 }
 #[tauri::command]

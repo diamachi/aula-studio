@@ -44,7 +44,7 @@ fn transfer(io: &impl ReportIo, packets: &[[u8; 33]], pause: impl Fn()) -> Resul
     Ok(())
 }
 
-pub fn send_custom(device: &HidDevice, packets: &[[u8; 33]]) -> Result<(), String> {
+pub fn send_configuration(device: &HidDevice, packets: &[[u8; 33]]) -> Result<(), String> {
     // Discard queued battery/status input before checking the new transaction.
     let mut buffer = [0u8; 512];
     for _ in 0..32 { if device.read_timeout(&mut buffer, 1).map_err(|e| e.to_string())? == 0 { break; } }
