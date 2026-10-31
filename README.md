@@ -77,7 +77,7 @@ Lighting selections and the keyboard illustration are **editor preferences and p
 ## Install
 
 - **Windows x64:** download the setup EXE from [Releases](https://github.com/diamachi/aula-studio/releases), or use `AULA-Studio-Windows-x64.exe` for the portable app. Microsoft WebView2 is required.
-- **Mac, Apple Silicon / M-series:** open the release `aarch64.dmg`, drag **AULA Studio** into Applications, and open it. The app is not notarized. If HID access is denied, check Input Monitoring permissions and reopen the app.
+- **Mac, Apple Silicon / M-series:** open the release `aarch64.dmg`, drag **AULA Studio** into Applications, and open it. The app is not notarized. If macOS blocks the unsigned app, run `xattr -dr com.apple.quarantine /Applications/AULA\ Studio.app` in Terminal and open it again. When the USB receiver is connected, AULA Studio requests Input Monitoring access if needed; approve the macOS prompt. If access was already denied, enable AULA Studio under **System Settings → Privacy & Security → Input Monitoring**, then quit and reopen it.
 
 For lighting and battery, plug in the USB receiver, switch the keyboard to **2.4G**, and press a key to wake it. Close the official driver and other configuration apps before connecting. For the display and clock, use a USB data cable and select **wired mode**.
 
@@ -87,7 +87,7 @@ For lighting and battery, plug in the USB receiver, switch the keyboard to **2.4
 | USB data cable, wired mode | Image/GIF display uploads and clock sync. |
 | Bluetooth | Configuration is not supported. |
 
-Lighting, per-key colors, battery and image/GIF playback have been checked on a physical F75 Max on Windows. Clock commands were acknowledged by the keyboard. **macOS packages still need hardware testing.** Intel Mac and Linux desktop packages are not provided; other keyboard models and firmware batches are not verified.
+Lighting, per-key colors, battery and image/GIF playback have been checked on a physical F75 Max on Windows. On Apple Silicon macOS, receiver interface detection and battery access have also been confirmed. Clock commands were acknowledged by the keyboard. Intel Mac and Linux desktop packages are not provided; other keyboard models and firmware batches are not verified.
 
 ## Build from source
 

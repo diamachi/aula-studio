@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { invoke, isTauri } from '@tauri-apps/api/core';
-import { Activity, ArrowDownRight, ArrowRight, Battery, Check, ChevronDown, ChevronRight, CircleHelp, Command, Keyboard, Lightbulb, LoaderCircle, Palette, Radio, RefreshCw, Save, SlidersHorizontal, Sparkles, Sun, Waves, X, Zap } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowRight, Battery, Check, ChevronDown, ChevronRight, CircleHelp, Command, Keyboard, Lightbulb, LoaderCircle, Palette, Radio, RefreshCw, Save, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Waves, X, Zap } from 'lucide-react';
 import './style.css';
 import './refinements.css';
 import './pastel.css';
@@ -118,6 +118,7 @@ function App() {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(false);
   const [help, setHelp] = useState(false);
+  const [inputMonitoringPrompt, setInputMonitoringPrompt] = useState(false);
   const [applied, setApplied] = useState<string | null>(null);
   const lock = useRef(false);
   const selected = useRef(id);
@@ -134,13 +135,25 @@ function App() {
     lock.current = true; if (!quiet) { setBusy(true); setError(false); setReceiverState('checking'); }
     try {
       const result = await invoke<Receiver[]>('scan_receivers');
+      setInputMonitoringPrompt(false);
       setDevices(result);
       const next = result.some(d => d.id === selected.current) ? selected.current : result[0]?.id || '';
       setId(next);
       setReceiverState(next ? 'connected' : 'disconnected');
       if (!next) { setBattery(null); setBatteryAt(''); setApplied(null); }
       if (!quiet) setNotice(result.length ? 'Receiver found. Your workspace is ready.' : 'No receiver found. Connect the USB dongle and select 2.4G on your keyboard.');
-    } catch (e) { setReceiverState('disconnected'); setId(''); setBattery(null); if (!quiet) { setError(true); setNotice(String(e)); } }
+    } catch (e) {
+      const message = String(e);
+      if (message.includes('AULA_INPUT_MONITORING_REQUIRED')) {
+        setInputMonitoringPrompt(true);
+        setError(true);
+        setNotice('Input Monitoring permission is needed to access the USB receiver.');
+      } else if (!quiet) {
+        setError(true);
+        setNotice(message);
+      }
+      setReceiverState('disconnected'); setId(''); setBattery(null);
+    }
     finally { lock.current = false; if (!quiet) setBusy(false); }
   }, [native]);
   const refreshBattery = useCallback(async (receiver: string) => {
@@ -189,7 +202,7 @@ function App() {
       <button className={`nav-active ${view === 'lighting' ? '' : 'nav-idle'}`} disabled={busy} onClick={() => setView('lighting')}><SlidersHorizontal size={17}/> Keyboard studio {view === 'lighting' && <span className="tiny-dot"/>}</button>
       <button className={`nav-active ${view === 'display' ? '' : 'nav-idle'}`} disabled={busy} onClick={() => setView('display')}><Keyboard size={17}/> Mini display {view === 'display' && <span className="tiny-dot"/>}</button>
       <div className="device-card"><div className="device-icon"><Keyboard size={28}/><span/></div><b>F75 Max</b><small>75% · Mechanical keyboard</small><div className="device-tag"><Radio size={12}/> 2.4 GHz wireless</div></div>
-      <div className="sidebar-bottom"><div className="local-note"><span className="local-dot"/> Made for your desk.</div><p>No accounts. No cloud.<br/>Just you and your keyboard.</p><button onClick={() => setHelp(true)}><CircleHelp size={16}/> Connection guide <ChevronRight size={14}/></button><div className="version">AULA STUDIO <span>v1.1.1</span></div></div>
+      <div className="sidebar-bottom"><div className="local-note"><span className="local-dot"/> Made for your desk.</div><p>No accounts. No cloud.<br/>Just you and your keyboard.</p><button onClick={() => setHelp(true)}><CircleHelp size={16}/> Connection guide <ChevronRight size={14}/></button><div className="version">AULA STUDIO <span>v1.1.2</span></div></div>
     </aside>
     <main>
       <header className="topbar"><span>Workspace <ChevronRight size={12}/> <b>F75 Max</b></span><div className="topbar-actions"><label className="ui-size-control"><span>UI size</span><select aria-label="Interface size" value={uiSize} onChange={e=>setUiSize(e.target.value)}><option value="auto">Auto</option><option value="100">100%</option><option value="125">125%</option><option value="150">150%</option></select></label><button className="theme-button" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <SunMoon size={16}/> : <Moon size={16}/>}<span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span></button><div className={`connection-pill ${receiverState === 'connected' && id ? 'connected' : ''}`}><span/>{!native ? 'Design preview' : receiverState === 'connected' && id ? 'Receiver connected' : receiverState === 'checking' ? 'Checking receiver…' : 'Receiver disconnected'}</div></div></header>
@@ -214,6 +227,7 @@ function App() {
       </div>
     </main>
     {help && <div className="modal-backdrop" onClick={() => setHelp(false)}><section className="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={e => e.stopPropagation()}><button className="close-modal icon-button" onClick={() => setHelp(false)} aria-label="Close guide"><X size={20}/></button><Radio className="help-symbol" size={30}/><div className="eyebrow">A SIMPLE CONNECTION</div><h2 id="help-title">Meet your receiver.</h2><p>Plug in the F75 Max USB dongle, switch your keyboard to <b>2.4G</b>, and press a key to wake it.</p><ol><li>Close the official driver so the receiver is free.</li><li>Click Scan, then choose a receiver interface.</li><li>Pick a color and effect. Click Apply lighting.</li></ol><p>The app selects the compatible 32-byte receiver interface. Receiver presence is checked every five seconds. Battery checks run every 30 seconds while the window is visible.</p><div className="help-note">If access fails on macOS, check Input Monitoring permission and reopen the app. Open Mini display for image/GIF uploads and clock sync over a USB data cable in wired mode.</div><button className="apply-button" onClick={() => setHelp(false)}>Got it <Check size={15}/></button></section></div>}
+    {inputMonitoringPrompt && <div className="modal-backdrop" onClick={() => setInputMonitoringPrompt(false)}><section className="help-modal" role="dialog" aria-modal="true" aria-labelledby="input-monitoring-title" onClick={e => e.stopPropagation()}><button className="close-modal icon-button" onClick={() => setInputMonitoringPrompt(false)} aria-label="Close permission guide"><X size={20}/></button><ShieldCheck className="help-symbol" size={30}/><div className="eyebrow">MACOS PERMISSION</div><h2 id="input-monitoring-title">Allow keyboard access.</h2><p>AULA Studio needs Input Monitoring permission to communicate with the USB receiver. macOS may ask you to approve access.</p><div className="help-note">If no system prompt appears, enable AULA Studio under <b>System Settings → Privacy & Security → Input Monitoring</b>, then quit and reopen the app.</div><button className="apply-button" onClick={() => void invoke('open_input_monitoring_settings').catch(e => { setError(true); setNotice(String(e)); })}>Open Input Monitoring settings <ArrowRight size={15}/></button></section></div>}
   </div>;
 }
 

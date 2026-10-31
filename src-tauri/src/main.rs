@@ -3,6 +3,7 @@ mod protocol;
 mod transfer;
 mod display;
 mod appearance;
+mod input_monitoring;
 use hidapi::{DeviceInfo, HidApi, HidDevice};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -17,16 +18,72 @@ fn eligible(d: &DeviceInfo) -> bool {
     { matches }
 }
 fn identity(d: &DeviceInfo) -> String { d.path().to_bytes().iter().map(|b| format!("{b:02x}")).collect() }
+
+// HIDAPI reconstructs descriptors differently on some platforms, so match
+// the report's meaning rather than depending on one exact byte sequence.
+fn has_32_byte_output_report(descriptor: &[u8]) -> bool {
+    let (mut report_size, mut report_count, mut report_id) = (0usize, 0usize, 0u8);
+    let mut globals = Vec::new();
+    let mut output_bits = [0usize; 256];
+    let mut offset = 0;
+
+    while offset < descriptor.len() {
+        let prefix = descriptor[offset];
+        offset += 1;
+        if prefix == 0xfe {
+            if offset + 2 > descriptor.len() { return false; }
+            let length = descriptor[offset] as usize;
+            offset += 2;
+            if offset + length > descriptor.len() { return false; }
+            offset += length;
+            continue;
+        }
+
+        let data_len = match prefix & 0x03 { 0 => 0, 1 => 1, 2 => 2, _ => 4 };
+        if offset + data_len > descriptor.len() { return false; }
+        let item_type = (prefix >> 2) & 0x03;
+        let item_tag = prefix >> 4;
+        let mut value = 0usize;
+        for (shift, byte) in descriptor[offset..offset + data_len].iter().enumerate() {
+            value |= (*byte as usize) << (shift * 8);
+        }
+        offset += data_len;
+
+        if item_type == 1 {
+            match item_tag {
+                7 => report_size = value,
+                8 => report_id = value as u8,
+                9 => report_count = value,
+                10 => globals.push((report_size, report_count, report_id)),
+                11 => if let Some((size, count, id)) = globals.pop() {
+                    report_size = size;
+                    report_count = count;
+                    report_id = id;
+                },
+                _ => {}
+            }
+        } else if item_type == 0 && item_tag == 9 {
+            output_bits[report_id as usize] = output_bits[report_id as usize]
+                .saturating_add(report_size.saturating_mul(report_count));
+        }
+    }
+
+    output_bits[0] == 32 * 8 && output_bits[1..].iter().all(|bits| *bits == 0)
+}
+
+fn has_compatible_output(device: &HidDevice) -> Result<bool, String> {
+    let mut descriptor = [0u8; 4096];
+    device.get_report_descriptor(&mut descriptor)
+        .map(|length| has_32_byte_output_report(&descriptor[..length]))
+        .map_err(|error| format!("Cannot inspect receiver reports: {error}"))
+}
+
 fn open(api: &HidApi, id: &str) -> Result<HidDevice, String> {
     let info = api.device_list().find(|d| eligible(d) && identity(d) == id)
         .ok_or("Receiver disconnected. Scan and select it again.")?;
     let device = info.open_device(api).map_err(|e| format!("Cannot open receiver: {e}"))?;
-    let mut descriptor = [0u8; 4096];
-    let length = device.get_report_descriptor(&mut descriptor).map_err(|e| format!("Cannot inspect receiver reports: {e}"))?;
-    // This device's descriptor declares byte-sized, unnumbered output reports.
-    // Interface 4 has the same VID/PID/page but uses 64-byte bodies instead.
-    if !descriptor[..length].windows(4).any(|bytes| bytes == [0x95, 0x20, 0x91, 0x02]) {
-        return Err("Select the 32-byte receiver interface (interface 3 on Windows). The selected endpoint uses a different report format.".into());
+    if !has_compatible_output(&device)? {
+        return Err("The selected endpoint does not expose the 32-byte receiver output report. Rescan and select the compatible receiver interface.".into());
     }
     Ok(device)
 }
@@ -39,9 +96,35 @@ async fn scan_receivers() -> Result<Vec<Receiver>, String> {
     tauri::async_runtime::spawn_blocking(|| {
         let _guard = HID_LOCK.lock().map_err(|e| e.to_string())?;
         let api = HidApi::new().map_err(|e| e.to_string())?;
-        let mut devices: Vec<_> = api.device_list().filter(|d| eligible(d)).map(|d| Receiver {
-            id: identity(d), name: "F75 Max · 2.4 GHz".into(), interface: d.interface_number(), usage: d.usage(),
-        }).collect();
+        let mut devices = Vec::new();
+        #[cfg(target_os = "macos")]
+        let mut input_monitoring_required = false;
+        for info in api.device_list().filter(|d| eligible(d)) {
+            // Windows exposes the proven interface as interface 3. Other
+            // platforms can number composite HID collections differently;
+            // inspect the report itself and hide the incompatible 64-byte one.
+            #[cfg(not(target_os = "windows"))]
+            {
+                let device = match info.open_device(&api) {
+                    Ok(device) => device,
+                    Err(_) => {
+                        #[cfg(target_os = "macos")]
+                        if input_monitoring::request_if_needed().is_err() {
+                            input_monitoring_required = true;
+                        }
+                        continue;
+                    }
+                };
+                if !matches!(has_compatible_output(&device), Ok(true)) { continue; }
+            }
+            devices.push(Receiver {
+                id: identity(info), name: "F75 Max · 2.4 GHz".into(), interface: info.interface_number(), usage: info.usage(),
+            });
+        }
+        #[cfg(target_os = "macos")]
+        if devices.is_empty() && input_monitoring_required {
+            return Err("AULA_INPUT_MONITORING_REQUIRED".into());
+        }
         devices.sort_by_key(|d| d.interface);
         Ok(devices)
     }).await.map_err(|e| e.to_string())?
@@ -116,6 +199,6 @@ async fn read_battery(id: String) -> Result<Option<u8>, String> {
 fn main() {
     tauri::Builder::default()
         .manage(display::DisplayState::default())
-        .invoke_handler(tauri::generate_handler![scan_receivers, apply_lighting, apply_per_key, apply_sleep, read_battery, display::scan_display, display::prepare_display, display::upload_display, display::sync_display_clock, appearance::set_app_theme])
+        .invoke_handler(tauri::generate_handler![scan_receivers, apply_lighting, apply_per_key, apply_sleep, read_battery, display::scan_display, display::prepare_display, display::upload_display, display::sync_display_clock, appearance::set_app_theme, input_monitoring::open_input_monitoring_settings])
         .run(tauri::generate_context!()).expect("Unable to launch AULA Studio");
 }

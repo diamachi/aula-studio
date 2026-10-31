@@ -8,7 +8,7 @@ Open **Actions → Desktop builds → Run workflow** and choose the source ref. 
 
 ## Publish a version
 
-1. Run `node scripts/set-version.mjs 1.1.1` (substitute the intended version). This updates app metadata without changing dependencies. Never use a global version-string replacement in lockfiles.
+1. Run `node scripts/set-version.mjs 1.1.2` (substitute the intended version). This updates app metadata without changing dependencies. Never use a global version-string replacement in lockfiles.
 2. Run the checks in the [development guide](DEVELOPMENT.md) and verify the intended behavior on hardware. Record platform-specific testing limits.
 3. Commit the release source, then push a matching tag, for example:
 

@@ -8,6 +8,12 @@ pub fn set_app_theme(window: WebviewWindow, theme: String) -> Result<(), String>
         _ => return Err("Unknown app theme".into()),
     };
     window.set_theme(Some(if dark { Theme::Dark } else { Theme::Light })).map_err(|e| e.to_string())?;
+    #[cfg(target_os = "macos")]
+    window.set_background_color(Some(if dark {
+        tauri::window::Color(0x17, 0x1c, 0x19, 0xff)
+    } else {
+        tauri::window::Color(0xf4, 0xf2, 0xed, 0xff)
+    })).map_err(|e| e.to_string())?;
     #[cfg(target_os = "windows")]
     {
         let hwnd = window.hwnd().map_err(|e| e.to_string())?.0 as isize;
