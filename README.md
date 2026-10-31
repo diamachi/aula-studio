@@ -1,148 +1,127 @@
 # AULA Studio
 
-A lightweight desktop configurator for the **AULA F75 Max**, built with Tauri 2,
-React, TypeScript and Rust. Windows and Apple Silicon macOS share the same source. No Python,
-Electron, account, cloud service, or bundled Node runtime is required to use it.
+A small desktop app for the **AULA F75 Max**. Change RGB effects, paint individual keys, check battery percentage, and put an image or GIF on the keyboard’s mini display.
 
-Unofficial community project; not affiliated with AULA or EPOMAKER.
+The app uses a native window on Windows and Apple Silicon macOS, built with Tauri, React and Rust. Normal use needs no terminal, external browser, Python installation or separately installed Node runtime.
 
-## Current status
+[Download releases](https://github.com/diamachi/aula-studio/releases) · [Build and development guide](docs/DEVELOPMENT.md) · [Release guide](docs/PUBLISHING.md)
 
-| Feature | Status |
+> Unofficial project, not affiliated with AULA or EPOMAKER. Desktop packages are unsigned. AULA Studio runs locally; no account or cloud service is needed.
+
+## A look at the app
+
+### Connection, battery and lighting
+
+The top panel shows the selected receiver interface and keyboard-reported battery percentage. A green connection badge means the USB receiver is present; it does not confirm that the wireless keyboard is awake. Receiver checks run every five seconds, with battery refresh every 30 seconds while the app is visible or when requested manually.
+
+Choose an effect card or explore all **20 effects** in the effect chooser. Use the color area, hue slider, system picker or hex input, then adjust brightness, speed and direction. Click **Apply lighting** to send the settings.
+
+### Per-key colors
+
+Open **Per-key colors** to paint individual keys or groups. Drag a rectangle across the keyboard to select several keys; hold **Shift, Ctrl or Command** while dragging to add to the selection. Group shortcuts, turn-off and undo controls make larger layouts easier to edit.
+
+Picking a color paints the selected keys in the editor. **Apply lighting** sends the layout to the keyboard. The outlined tab shows which editor is active. To return to ordinary lighting, switch to **Effects** and apply an effect.
+
+### Mini display and clock
+
+Connect a USB data cable, switch the keyboard to **wired mode**, and open **Mini display**. Choose a PNG, JPEG or GIF, select **Fit**, **Fill** or **Stretch**, review the 128 × 128 preview, then click **Upload to keyboard**. GIF previews show the first frame; the complete animation is uploaded. Keep USB connected until the upload finishes.
+
+Uploads replace custom image slot 1. Select the custom-image screen using the keyboard controls if needed. **Sync clock** sets the keyboard to this computer’s local time.
+
+**Image/GIF uploads require wired USB.** No working upload route was found over the 2.4 GHz receiver; see the [wireless display investigation](research/wireless-display-audit.md).
+
+### Appearance and saved colors
+
+Choose pastel light or charcoal dark mode. The interface scales with the window, with a saved **UI size** override: Auto, 100%, 125% or 150%.
+
+All seven palette slots are editable. Pick a color, click **Save color**, then choose the slot to replace. Theme, palette, lighting settings and the per-key layout are saved locally.
+
+## What it does
+
+| Feature | Behavior |
 | --- | --- |
-| 2.4 GHz receiver discovery | Tested on Windows |
-| Built-in RGB effects, color, brightness, speed and direction | Working on the user's Windows keyboard |
-| Battery percentage and refresh | Working on Windows |
-| Pastel light/dark themes and flat 2D preview | Implemented |
-| Per-key editor, groups, rectangle selection and local saved layouts | Implemented in UI |
-| Per-key upload over 2.4 GHz | Confirmed working on the user's Windows keyboard in 0.2.1 |
-| macOS (Apple Silicon / M-series) | Native build provided; not hardware-tested |
-| TFT PNG/JPEG/GIF uploads over wired USB | Confirmed working on the user’s Windows keyboard |
-| Wired clock sync | Command acknowledgments verified on Windows |
-| Key remapping, Bluetooth configuration | Not implemented |
+| RGB effects | 20 modes, single color or multicolor, brightness, motion speed and direction over 2.4 GHz. |
+| Per-key lighting | Individual keys, rectangle selection, additive selection, groups, painting, lights off and undo. |
+| Battery | Reads the keyboard-reported percentage through the receiver, with automatic and manual refresh. |
+| Mini display | Wired PNG/JPEG/GIF upload to the 128 × 128 screen, with resizing choices and transfer progress. |
+| Image limits | Up to 16 MB, 4096 × 4096 source pixels and 255 frames. Transparency becomes black; GIF delays are limited to 2–510 ms per frame. |
+| Clock | Syncs the keyboard clock over wired USB. |
+| Appearance | Light/dark themes, responsive sizing and seven editable color presets. |
+| Local preferences | Saves editor settings on this computer; no account or cloud storage. |
 
-Version 0.2.1 was checked against an official-app USB capture. The user confirmed
-both the captured WASD-green sequence and the updated app's custom colors on the
-physical keyboard. Other firmware batches and macOS still need hardware tests.
+Lighting selections and the keyboard illustration are **editor preferences and previews, not live device readback**. Battery is read from the keyboard. Key remapping, Bluetooth configuration and firmware updates are not implemented.
 
-## Use
+## Install
 
-Plug in the USB receiver, switch the keyboard to 2.4G, close other driver apps,
-and open AULA Studio. Choose an effect and color, then click **Apply lighting**.
-The battery/receiver panel is at the top with readable status text. Battery
-refreshes automatically while visible. Receiver presence is checked every five
-seconds; the badge turns green only while the USB receiver is detected. This
-does not assert that the wireless keyboard is awake.
-Settings persist locally as editor preferences; they are not read from hardware.
+- **Windows x64:** download the setup EXE from [Releases](https://github.com/diamachi/aula-studio/releases), or use `AULA-Studio-Windows-x64.exe` for the portable app. Microsoft WebView2 is required.
+- **Mac, Apple Silicon / M-series:** open the release `aarch64.dmg`, drag **AULA Studio** into Applications, and open it. The app is not notarized. If HID access is denied, check Input Monitoring permissions and reopen the app.
 
-The supported receiver is `05AC:024F`, vendor usage page `FF60`, with 32-byte
-output reports (interface 3 on Windows). Interface 4 uses a different 64-byte
-format and is excluded from Windows discovery. Other device batches and wired
-configuration protocols are not assumed compatible.
+For lighting and battery, plug in the USB receiver, switch the keyboard to **2.4G**, and press a key to wake it. Close the official driver and other configuration apps before connecting. For the display and clock, use a USB data cable and select **wired mode**.
 
-The UI includes a saturation/value picker, hue slider, system color picker, hex
-input, palette swatches, effect cards, and a styled dropdown with descriptions.
-All seven palette slots are editable: choose a color, click **Save color**, then
-click the slot to replace. Presets persist locally. The preview is illustrative.
-Dark/light theme preference is saved locally. The active editor tab is outlined.
+| Connection | Available features |
+| --- | --- |
+| 2.4 GHz USB receiver | RGB effects, per-key colors and battery percentage. |
+| USB data cable, wired mode | Image/GIF display uploads and clock sync. |
+| Bluetooth | Configuration is not supported. |
 
-The per-key editor supports clicks, drag-box selection, additive
-Shift/Ctrl/Command-drag, group presets, painting, turn-off, and undo. Changing
-the picker automatically paints selected keys locally; Apply sends the full layout. Switching to Effects and applying a built-in effect
-returns to ordinary lighting.
-
-## Mini display
-
-Connect a USB data cable and switch the keyboard to wired mode. Close the official
-driver, open **Mini display**, and choose a PNG, JPEG or GIF (up to 16 MB and
-4096×4096 source pixels). Choose Fit, Fill or Stretch, review the 128×128 first-frame
-preview, and click **Upload to keyboard**. Keep USB connected until completion.
-Uploads replace custom slot 1. Select the custom-image screen using the keyboard
-controls if needed. GIFs support at most 255 frames; delays are clamped to 2–510 ms.
-The **Sync clock** button sends this computer’s local time.
-
-Display transfers use `0C45:800A`, command usage page `FF13` and raw page `FF68`.
-Other batches are not assumed compatible. The clock exchange has been verified
-on the connected Windows keyboard. The user also confirmed image/GIF playback
-on the physical display. macOS display transfers still need hardware testing.
-See [display protocol notes](research/display-protocol.md).
+Lighting, per-key colors, battery and image/GIF playback have been checked on a physical F75 Max on Windows. Clock commands were acknowledged by the keyboard. **macOS packages still need hardware testing.** Intel Mac and Linux desktop packages are not provided; other keyboard models and firmware batches are not verified.
 
 ## Build from source
 
-Requirements: Node.js 22+, Rust stable, and the
-[Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/).
-Windows needs Microsoft C++ Build Tools and WebView2. macOS needs Xcode command
-line tools. Build native binaries on their target OS. The release workflow targets Windows
-x64 and Apple Silicon (M-series) macOS only; Intel macOS builds are excluded.
+The repository and source ZIP include dependency lockfiles, icons, platform setup/build scripts and protocol notes. **Toolchains and dependency caches are not bundled.** Initial setup needs internet access; the official vendor executable is not a build dependency.
+
+| Target | Required tools |
+| --- | --- |
+| Frontend development | Node.js 22+ and npm. |
+| Windows desktop | Windows x64, Rust stable, Microsoft C++ Build Tools and WebView2. |
+| Mac desktop / DMG | Apple Silicon Mac, Rust stable and Xcode command line tools. |
+
+See the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/) and the [development guide](docs/DEVELOPMENT.md) for setup scripts, portable-tool behavior, tests and output locations.
 
 ```sh
 npm ci
 npm run desktop
 ```
 
-Validation and builds:
+Build each native package on its target OS. The Mac does not cross-compile the Windows executable, and the release workflow builds only Windows x64 and macOS ARM64.
 
-```sh
-npm run test:ui
-cargo test --locked --manifest-path src-tauri/Cargo.toml
-npm run tauri -- build --no-bundle
+### GitHub Actions
+
+**Actions → Desktop builds → Run workflow** builds both platforms and saves downloadable artifacts. Pushing a `v*` tag also publishes release assets after both platform builds succeed. Normal pushes to `main` do not trigger release builds.
+
+The release includes Windows setup and portable executables, an M-series Mac DMG, and a source ZIP. See the [release guide](docs/PUBLISHING.md).
+
+## Project layout
+
+```text
+src/             React interface, keyboard editor and display controls
+src-tauri/src/   Rust HID transport, packet encoding and image conversion
+scripts/         Platform setup, build, source packaging and UI checks
+docs/            Development, release and USB recording guides
+research/        Protocol evidence, compatibility limits and upstream licenses
+.github/         Windows and Apple Silicon build/release workflow
+.tools/          Local tools and research inputs (ignored)
+web-dist/        Generated frontend output (ignored)
+dist/            Generated distribution files (ignored)
 ```
 
-- Windows setup: `powershell -File scripts/setup-windows.ps1`
-- Windows missing tool installation: add `-InstallTools`, then reopen the terminal.
-- Windows portable EXE: `powershell -File scripts/build-windows.ps1`
-- macOS setup: `sh scripts/setup-macos.sh`
-- macOS app/DMG: `sh scripts/build-macos.sh`
-- Tool check: `node scripts/doctor.mjs`
-- Source ZIP: `powershell -File scripts/source-archive.ps1`
+## Protocol and validation
 
-The source contains dependency lockfiles, icons, and platform setup/build scripts.
-Toolchains, caches and generated dependencies are not bundled. Initial setup
-requires Internet access. Signing and macOS notarization are not configured.
-The GitHub Actions workflow builds Windows and macOS artifacts; a successful
-build is not a hardware compatibility test.
+The tested receiver is **05AC:024F**, usage page **FF60**, using its 32-byte report interface (interface 3 on Windows). Its separate 64-byte interface is excluded from wireless configuration. The wired display uses **0C45:800A**, command page **FF13** and display page **FF68**. Device IDs alone do not establish compatibility with other models.
 
-## Help investigate custom lighting
+The backend serializes HID operations, validates settings and waits for acknowledgments during custom lighting and display transfers. A failed custom-lighting transfer attempts to restore a built-in effect. No firmware flashing commands are used.
 
-Follow the [official-app USB recording guide](docs/CAPTURE-USB.md). Record USB
-receiver traffic on Windows with Wireshark + USBPcap, starting before opening
-the official app, and make one controlled color change at a time.
+Fourteen Rust tests cover packet encoding, acknowledgment handling, image conversion, GIF timing, frame limits and clock validation. Production-DOM UI checks cover selection/apply behavior, palette and interface-size persistence, connection/battery status, display navigation and clock invocation. Passing CI verifies the software checks; physical hardware testing is listed separately above.
 
-Keep captures private: they may include keystrokes or unrelated USB traffic.
-Do not upload them in a public issue. Source control ignores packet captures. The user's capture is kept private;
-only protocol facts and synthetic regression vectors are included in the source.
+- [Per-key protocol and layout provenance](research/per-key-provenance.md)
+- [Wired display protocol](research/display-protocol.md)
+- [Wireless display investigation](research/wireless-display-audit.md)
+- [Record official-app USB traffic](docs/CAPTURE-USB.md)
 
-## Protocol and attribution
+USB captures can contain keystrokes and unrelated device traffic. Keep raw captures private; do not attach them to public issues. This repository includes protocol facts and synthetic regression vectors, not private captures or vendor binaries.
 
-- Built-in wireless RGB and battery: [VitalyArt/Aula-F75-Max-Driver](https://github.com/VitalyArt/Aula-F75-Max-Driver).
-- Experimental wireless per-key encoding: [thibaultmiclo/aula-driver](https://github.com/thibaultmiclo/aula-driver).
-- Numeric key geometry/LED indices: EPOMAKER F75 Max driver layout data, with
-  [provenance notes](research/per-key-provenance.md). No vendor executable,
-  firmware, or artwork is distributed in this repository.
+## Size and licensing
 
-The backend validates endpoints and settings, serializes HID operations, checks
-short writes, and waits for custom upload acknowledgments. A failed custom
-transfer attempts to restore a built-in effect. Physical behavior remains the
-final test; no firmware flashing commands are used.
+Tauri uses the operating system’s WebView2/WebKit engine with a Rust backend. It does not bundle Chromium, Electron, Node or Python into the desktop app.
 
-MIT license. Retain the upstream notices in `research/LICENSE.upstream` and
-`research/LICENSE.perkey` when redistributing derived code.
-
-## 0.2.1 validation
-
-Ten Rust tests and a production-DOM UI check pass. UI checks cover per-key color
-selection and payload delivery, saved palette replacement, valid global-setting
-persistence, top-panel order, battery display, and disabling Apply on disconnect.
-The raw USB capture is not distributed.
-
-## Responsive interface sizing (0.2.2)
-
-The interface uses a shared responsive rem baseline and a fluid workspace rather
-than a fixed 1370-pixel content cap. Auto sizing grows from 16 px on smaller
-windows to about 21.5 px at 2560-pixel viewport width (capped at 24 px). Text,
-controls, spacing and the keyboard illustration scale together. Small windows
-use a compact sidebar and stacked controls instead of shrinking the labels.
-
-Use **UI size** in the top bar: Auto, 100% (16 px base), 125% (20 px), or 150%
-(24 px). The override is saved locally. No screen control or capture is required
-to use it. The production-DOM test verifies changing and persisting the setting.
+Original source is [MIT licensed](LICENSE). Wireless RGB/battery and wired display work build on [VitalyArt/Aula-F75-Max-Driver](https://github.com/VitalyArt/Aula-F75-Max-Driver); wireless per-key framing builds on [thibaultmiclo/aula-driver](https://github.com/thibaultmiclo/aula-driver). Key geometry and LED indices follow the official F75 Max layout, as described in the provenance notes. Retain [the upstream notice](research/LICENSE.upstream) and [per-key notice](research/LICENSE.perkey) when redistributing derived code. Vendor executable, firmware and artwork are not distributed.
