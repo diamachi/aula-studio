@@ -39,6 +39,13 @@ try {
   assert.match(window.document.querySelector('.connection-pill').textContent, /Receiver connected/);
   assert.equal(window.document.querySelector('.battery-heading b').textContent, '84%');
   assert.ok(window.document.querySelector('.device-strip').compareDocumentPosition(window.document.querySelector('.lighting-tabs')) & window.Node.DOCUMENT_POSITION_FOLLOWING, 'Connection panel precedes the editor');
+  const size=window.document.querySelector('select[aria-label="Interface size"]');
+  assert.ok(size, 'Interface size control is available');
+  size.value='150';size.dispatchEvent(new window.Event('change',{bubbles:true}));await wait();
+  assert.equal(window.document.documentElement.dataset.uiSize,'150');
+  assert.equal(window.localStorage.getItem('aula.ui-size'),'150');
+  size.value='auto';size.dispatchEvent(new window.Event('change',{bubbles:true}));await wait();
+  assert.equal(window.document.documentElement.dataset.uiSize,'auto');
 
   button('Per-key colors').click(); await wait();
   assert.equal(button('Per-key colors').getAttribute('aria-pressed'), 'true');
@@ -66,5 +73,5 @@ try {
   assert.ok(!window.document.querySelector('.connection-pill').classList.contains('connected'));
   assert.equal(button('Apply lighting').disabled, true);
   assert.deepEqual(errors, []);
-  console.log('UI checks passed: mount, battery, top panel, per-key selection/apply, palette persistence, and disconnect status.');
+  console.log('UI checks passed: mount, battery, top panel, UI size persistence, per-key selection/apply, palette persistence, and disconnect status.');
 } finally { window.close(); }

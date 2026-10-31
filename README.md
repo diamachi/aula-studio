@@ -116,3 +116,15 @@ Ten Rust tests and a production-DOM UI check pass. UI checks cover per-key color
 selection and payload delivery, saved palette replacement, valid global-setting
 persistence, top-panel order, battery display, and disabling Apply on disconnect.
 The raw USB capture is not distributed.
+
+## Responsive interface sizing (0.2.2)
+
+The interface uses a shared responsive rem baseline and a fluid workspace rather
+than a fixed 1370-pixel content cap. Auto sizing grows from 16 px on smaller
+windows to about 21.5 px at 2560-pixel viewport width (capped at 24 px). Text,
+controls, spacing and the keyboard illustration scale together. Small windows
+use a compact sidebar and stacked controls instead of shrinking the labels.
+
+Use **UI size** in the top bar: Auto, 100% (16 px base), 125% (20 px), or 150%
+(24 px). The override is saved locally. No screen control or capture is required
+to use it. The production-DOM test verifies changing and persisting the setting.
