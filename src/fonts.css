@@ -1,2 +1,2 @@
-/* System fonts keep the app offline, small, and native on Windows and macOS. */
+/* System sans for controls; locally bundled display serif is in atmosphere.css. */
 @font-face{font-family:'Studio Sans';src:local('Inter'),local('SF Pro Text'),local('Segoe UI');font-style:normal;font-weight:100 900;font-display:swap}

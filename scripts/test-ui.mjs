@@ -29,7 +29,7 @@ window.__TAURI_INTERNALS__ = {
 window.localStorage.setItem('aula.perkey.v1', JSON.stringify(Object.fromEntries(layout.map(k => [k.index, '000000']))));
 const wait = () => new Promise(resolve => setTimeout(resolve, 40));
 const button = label => {
-  const found = [...window.document.querySelectorAll('button')].find(b => b.textContent.trim() === label || b.getAttribute('aria-label') === label);
+  const found = [...window.document.querySelectorAll('button')].find(b => b.textContent.trim() === label || b.querySelector('b')?.textContent.trim() === label || b.getAttribute('aria-label') === label);
   assert.ok(found, `Button exists: ${label}`);
   return found;
 };
@@ -68,6 +68,17 @@ try {
   assert.equal(JSON.parse(window.localStorage.getItem('aula.palette.v1'))[0], 'A8C692');
   assert.equal(window.document.querySelector('.swatches button').getAttribute('aria-label'), 'Preset 1, color A8C692');
 
+  assert.equal(calls.some(c => c.command === 'apply_sleep'), false, 'Sleep is never written automatically');
+  button('1 min').click(); await wait();
+  assert.equal(JSON.parse(window.localStorage.getItem('aula.sleep.v1')).timeout, 1);
+  button('Apply sleep timer').click(); await wait();
+  const sleep = calls.find(c => c.command === 'apply_sleep');
+  assert.ok(sleep, 'Sleep timer sends a separate native configuration command');
+  assert.equal(sleep.args.settings.timeout, 1);
+  assert.equal(sleep.args.settings.disableWin, false);
+  assert.equal(sleep.args.settings.fnToggle, false);
+  assert.match(window.document.querySelector('.sleep-status').textContent, /Sleep setting sent: 1 min/);
+
   button('Mini display').click(); await wait();
   assert.match(window.document.querySelector('.display-connection').textContent, /Wired display ready/);
   assert.equal(button('Upload to keyboard').disabled, true, 'An image is required before uploading');
@@ -82,6 +93,7 @@ try {
   assert.match(window.document.querySelector('.connection-pill').textContent, /Receiver disconnected/);
   assert.ok(!window.document.querySelector('.connection-pill').classList.contains('connected'));
   assert.equal(button('Apply lighting').disabled, true);
+  assert.equal(button('Apply sleep timer').disabled, true);
   assert.deepEqual(errors, []);
   console.log('UI checks passed: mount, battery, top panel, UI size persistence, per-key selection/apply, palette persistence, and disconnect status.');
 } finally { window.close(); }

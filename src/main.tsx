@@ -9,7 +9,9 @@ import { EffectSelect } from './EffectSelect';
 import { PerKeyEditor, loadKeyColors, keyLayout, type KeyColors } from './PerKeyEditor';
 import { Moon, SunMoon } from 'lucide-react';
 import { DisplayPanel } from './DisplayPanel';
+import { SleepPanel, type SleepSettings } from './SleepPanel';
 import './responsive.css';
+import './atmosphere.css';
 
 type Receiver = { id: string; name: string; interface: number; usage: number };
 type Settings = { mode: number; color: string; brightness: number; speed: number; colorful: boolean; direction: number };
@@ -157,6 +159,13 @@ function App() {
     const interval = setInterval(() => { if (!document.hidden) void refreshBattery(id); }, 30000);
     return () => { clearTimeout(timer); clearInterval(interval); };
   }, [id, refreshBattery]);
+  async function applySleep(settings: SleepSettings) {
+    if (!id || lock.current || !native) return false;
+    lock.current = true; setBusy(true); setError(false); setNotice('Sending keyboard sleep settings…');
+    try { await invoke('apply_sleep', { id, settings }); setNotice('Sleep settings acknowledged by the receiver.'); return true; }
+    catch (e) { setError(true); setNotice(String(e)); return false; }
+    finally { lock.current = false; setBusy(false); }
+  }
   async function apply() {
     if (!id || lock.current) return;
     lock.current = true; setBusy(true); setError(false); setNotice('Sending your lighting to the keyboard…');
@@ -176,12 +185,12 @@ function App() {
       <button className={`nav-active ${view === 'lighting' ? '' : 'nav-idle'}`} disabled={busy} onClick={() => setView('lighting')}><SlidersHorizontal size={17}/> Keyboard studio {view === 'lighting' && <span className="tiny-dot"/>}</button>
       <button className={`nav-active ${view === 'display' ? '' : 'nav-idle'}`} disabled={busy} onClick={() => setView('display')}><Keyboard size={17}/> Mini display {view === 'display' && <span className="tiny-dot"/>}</button>
       <div className="device-card"><div className="device-icon"><Keyboard size={28}/><span/></div><b>F75 Max</b><small>75% · Mechanical keyboard</small><div className="device-tag"><Radio size={12}/> 2.4 GHz wireless</div></div>
-      <div className="sidebar-bottom"><div className="local-note"><span className="local-dot"/> Made for your desk.</div><p>No accounts. No cloud.<br/>Just you and your keyboard.</p><button onClick={() => setHelp(true)}><CircleHelp size={16}/> Connection guide <ChevronRight size={14}/></button><div className="version">AULA STUDIO <span>v1.0.0</span></div></div>
+      <div className="sidebar-bottom"><div className="local-note"><span className="local-dot"/> Made for your desk.</div><p>No accounts. No cloud.<br/>Just you and your keyboard.</p><button onClick={() => setHelp(true)}><CircleHelp size={16}/> Connection guide <ChevronRight size={14}/></button><div className="version">AULA STUDIO <span>v1.1.0</span></div></div>
     </aside>
     <main>
       <header className="topbar"><span>Workspace <ChevronRight size={12}/> <b>F75 Max</b></span><div className="topbar-actions"><label className="ui-size-control"><span>UI size</span><select aria-label="Interface size" value={uiSize} onChange={e=>setUiSize(e.target.value)}><option value="auto">Auto</option><option value="100">100%</option><option value="125">125%</option><option value="150">150%</option></select></label><button className="theme-button" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <SunMoon size={16}/> : <Moon size={16}/>}<span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span></button><div className={`connection-pill ${receiverState === 'connected' && id ? 'connected' : ''}`}><span/>{!native ? 'Design preview' : receiverState === 'connected' && id ? 'Receiver connected' : receiverState === 'checking' ? 'Checking receiver…' : 'Receiver disconnected'}</div></div></header>
       <div className="workspace">{view === 'display' ? <DisplayPanel onBusy={value => { lock.current = value; setBusy(value); }}/> : <>
-        <section className="page-heading"><div><div className="eyebrow">A LITTLE PERSONALITY GOES A LONG WAY</div><h1>Your keys. Your atmosphere<span>.</span></h1><p>Find the light that feels like you.</p></div><button className="icon-button" onClick={() => setHelp(true)} aria-label="Open connection guide"><CircleHelp size={19}/></button></section>
+        <section className="page-heading"><div><div className="eyebrow">A LITTLE PERSONALITY GOES A LONG WAY</div><h1 className="hero-title">Your keys. <em>Your atmosphere.</em></h1><p>Find the light that feels like you.</p></div><button className="icon-button" onClick={() => setHelp(true)} aria-label="Open connection guide"><CircleHelp size={19}/></button></section>
         <section className="device-strip"><div className="receiver-block"><div className="receiver-icon"><Radio size={19}/></div><div><small>YOUR CONNECTION</small><div className="receiver-select"><select aria-label="Receiver interface" value={id} onChange={e => setId(e.target.value)} disabled={!devices.length || busy}>{!devices.length && <option value="">{native ? 'Connect your receiver' : 'Desktop app required'}</option>}{devices.map(d => <option key={d.id} value={d.id}>2.4 GHz receiver · Interface {d.interface}</option>)}</select><ChevronDown size={12}/></div></div><button className="icon-button" title="Scan receivers" aria-label="Scan receivers" disabled={busy} onClick={() => void scan()}><RefreshCw size={15} className={busy ? 'spin' : ''}/></button></div><div className="battery-block"><Battery size={21}/><div><div className="battery-heading"><b>{battery === null ? '—' : `${battery}%`}</b><span>Battery</span></div><div className="battery-track"><span style={{ width: `${battery ?? 0}%`, background: battery !== null && battery <= 20 ? '#E47B52' : '#83A48B' }}/></div><small>{batteryState === 'Updated' ? `Updated ${batteryAt}` : batteryState === 'Unavailable' ? 'Unavailable · wake keyboard & retry' : batteryState === 'Checking' ? 'Checking…' : 'Waiting for receiver'}</small></div><button className="icon-button" aria-label="Refresh battery" title="Refresh battery" disabled={!id || receiverState !== 'connected' || busy} onClick={() => void refreshBattery(id)}><RefreshCw size={14}/></button></div></section>
         <div className="lighting-tabs" role="group" aria-label="Lighting editor"><button className={lightingTab === 'effects' ? 'active' : ''} aria-pressed={lightingTab === 'effects'} disabled={busy} onClick={() => setLightingTab('effects')}>Effects</button><button className={lightingTab === 'keys' ? 'active' : ''} aria-pressed={lightingTab === 'keys'} disabled={busy} onClick={() => setLightingTab('keys')}>Per-key colors</button></div><div className="layout">
           <div className="primary-column">
@@ -191,6 +200,7 @@ function App() {
           <div className="control-column">
             <section className="panel color-panel"><div className="section-title"><h2><Palette size={17}/> Color story</h2><span className="mini-label">RGB</span></div><ColorPicker color={settings.color} onChange={color => update({ color })}/><div className="toggle-row" style={lightingTab === 'keys' ? {display: 'none'} : undefined}><div><b>Go multicolor</b><small>Let the whole spectrum in.</small></div><button className={`toggle ${settings.colorful ? 'on' : ''}`} aria-label="Multicolor effect" role="switch" aria-checked={settings.colorful} onClick={() => update({ colorful: !settings.colorful })}><span/></button></div></section>
             <section className="panel tuning-panel"><div className="section-title"><h2><SlidersHorizontal size={17}/> Fine-tune</h2></div>{([{ key: 'brightness', label: 'Brightness', icon: Sun, end: 'Bright' }, { key: 'speed', label: 'Motion speed', icon: Zap, end: 'Fast' }] as const).filter(control => lightingTab === 'effects' || control.key === 'brightness').map(control => <div className="slider-control" key={control.key}><label htmlFor={control.key}><span><control.icon size={14}/>{control.label}</span><b>{settings[control.key]}<i> / 5</i></b></label><input id={control.key} type="range" min="1" max="5" value={settings[control.key]} style={{ '--range-fill': `${(settings[control.key] - 1) * 25}%` } as React.CSSProperties} onChange={e => update({ [control.key]: +e.target.value })}/><div className="range-labels"><span>{control.key === 'brightness' ? 'Subtle' : 'Slow'}</span><span>{control.end}</span></div></div>)}<label className="direction-row">Direction<div className="select-wrap"><select aria-label="Effect direction" value={settings.direction} onChange={e => update({ direction: +e.target.value })}><option value={0}>Right →</option><option value={1}>Down ↓</option><option value={2}>Left ←</option><option value={3}>Up ↑</option></select><ChevronDown size={12}/></div></label></section>
+            <SleepPanel disabled={!id || receiverState !== 'connected' || busy} apply={applySleep}/>
           </div>
         </div>
 

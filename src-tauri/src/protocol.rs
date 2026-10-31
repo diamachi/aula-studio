@@ -2,6 +2,21 @@
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(rename_all="camelCase",deny_unknown_fields)]
+pub struct SleepSettings {
+    pub timeout: u8, pub response: u8, pub fn_toggle: bool,
+    pub disable_win: bool, pub disable_alt_f4: bool, pub disable_alt_tab: bool,
+}
+pub fn sleep_packet(s:&SleepSettings)->Result<[u8;33],String>{
+    if s.timeout>3 || !(1..=5).contains(&s.response){return Err("Invalid sleep or response setting".into());}
+    let mut p=[0u8;33];p[1..4].copy_from_slice(&[7,16,0]);
+    p[5]=1;p[6]=s.disable_win as u8;p[7]=s.disable_alt_f4 as u8;p[8]=s.disable_alt_tab as u8;
+    p[9]=s.fn_toggle as u8;p[10]=s.timeout;p[12]=s.response;
+    p[18..20].copy_from_slice(&[0xaa,0x55]);
+    p[32]=p[1..32].iter().fold(0u8,|a,b|a.wrapping_add(*b));Ok(p)
+}
+
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct KeyColor { pub index: u8, pub color: String }
 
@@ -139,5 +154,15 @@ mod tests {
         assert_eq!(parse_battery(&[0, 0x20, 1, 0, 100]), Some(100));
         assert_eq!(parse_battery(&[0x20, 1, 0, 0]), Some(0));
         for data in [&[][..], &[0], &[0x20, 1], &[0x20, 2, 0, 50], &[0x20, 1, 0, 255]] { assert_eq!(parse_battery(data), None); }
+    }
+    #[test]
+    fn sleep_values_and_companion_fields(){
+        for timeout in 0..=3{
+            let s=SleepSettings{timeout,response:3,fn_toggle:true,disable_win:true,disable_alt_f4:false,disable_alt_tab:true};
+            let p=sleep_packet(&s).unwrap();assert_eq!(&p[1..13],&[7,16,0,0,1,1,0,1,1,timeout,0,3]);
+            assert_eq!(&p[18..20],&[0xaa,0x55]);assert_eq!(p[32],p[1..32].iter().fold(0u8,|a,b|a.wrapping_add(*b)));
+        }
+        let mut s=SleepSettings{timeout:4,response:1,fn_toggle:false,disable_win:false,disable_alt_f4:false,disable_alt_tab:false};
+        assert!(sleep_packet(&s).is_err());s.timeout=1;s.response=0;assert!(sleep_packet(&s).is_err());
     }
 }

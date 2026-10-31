@@ -34,3 +34,7 @@ Replaying only the lighting packets on interface 3 was physically confirmed by
 the user. The user subsequently confirmed the updated 0.2.1 editor's custom
 colors match the keyboard. No capture bytes, keystrokes, or raw USB dumps are
 published. The Rust suite uses a synthetic W-red regression vector.
+
+## Sleep and function settings
+
+The sleep control uses wireless command `07 10 00`, the complete 16-byte function payload, an AA55 trailer and the standard checksum. Sleep is payload byte 6 (0=never, 1=1 minute, 2=5 minutes, 3=30 minutes). The same payload includes shortcut locks, Fn behavior and response level; all are explicit UI preferences because no verified configuration readback exists. See VitalyArt’s `keyResponseReport` and thibaultmiclo’s `function_packet`. The F75 Max vendor sender at `00414290` independently constructs this command. Packet/ACK software checks pass; physical timing and companion behavior remain unverified on this unit.

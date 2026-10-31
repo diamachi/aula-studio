@@ -38,9 +38,17 @@ Uploads replace custom image slot 1. Select the custom-image screen using the ke
 
 ![AULA Studio mini-display page showing a pastel mountain preview, image fit options, USB upload and clock sync](docs/screenshots/mini-display-dark.png)
 
+### Sleep timer
+
+Under **Rest a little**, choose Never, 1 min, 5 min or 30 min, then click **Apply sleep timer**. The receiver must be connected in 2.4G mode. No sleep setting is sent automatically on startup.
+
+Expand **Keyboard behavior** to choose shortcut locks, Fn behavior and response level. The keyboard applies these settings together with sleep; the app cannot read the existing values back. Saved choices are local preferences. Receiver acknowledgments confirm receipt; physical sleep timing still needs testing.
+
+![Warm light-mode keyboard sleep timer with four inactivity choices](docs/screenshots/sleep-timer-light.png)
+
 ### Appearance and saved colors
 
-Choose pastel light or charcoal dark mode. The interface scales with the window, with a saved **UI size** override: Auto, 100%, 125% or 150%.
+Choose warm oat-and-apricot light mode with a matching sand sidebar, or charcoal dark mode. Locally bundled DM Serif Display headings pair roman and italic lettering. The interface scales with the window, with a saved **UI size** override: Auto, 100%, 125% or 150%.
 
 All seven palette slots are editable. Pick a color, click **Save color**, then choose the slot to replace. Theme, palette, lighting settings and the per-key layout are saved locally.
 
@@ -54,6 +62,7 @@ All seven palette slots are editable. Pick a color, click **Save color**, then c
 | Mini display | Wired PNG/JPEG/GIF upload to the 128 × 128 screen, with resizing choices and transfer progress. |
 | Image limits | Up to 16 MB, 4096 × 4096 source pixels and 255 frames. Transparency becomes black; GIF delays are limited to 2–510 ms per frame. |
 | Clock | Syncs the keyboard clock over wired USB. |
+| Keyboard sleep | Never, 1 minute, 5 minutes or 30 minutes over the 2.4 GHz receiver; explicit Apply with companion keyboard-behavior controls. |
 | Appearance | Light/dark themes, responsive sizing and seven editable color presets. |
 | Local preferences | Saves editor settings on this computer; no account or cloud storage. |
 
@@ -93,6 +102,58 @@ npm run desktop
 
 Build each native package on its target OS. The Mac does not cross-compile the Windows executable, and the release workflow builds only Windows x64 and macOS ARM64.
 
+### Continue development on your Mac
+
+Use an **Apple Silicon / M-series Mac**. Install Git, Node.js 22+ with npm, [Rust stable](https://rustup.rs/) and Apple command line tools (`xcode-select --install`). These are development prerequisites; end users only need the packaged app.
+
+Clone the repository, or unpack `AULA-Studio-source.zip`, then open that folder in your editor:
+
+```sh
+git clone https://github.com/diamachi/aula-studio.git
+cd aula-studio
+sh scripts/setup-macos.sh
+npm run desktop
+```
+
+Edit React/TypeScript and CSS in `src/`; edit native commands and packet handling in `src-tauri/src/`. The development window reloads frontend edits; native changes rebuild the Rust backend. The bundled fonts work offline. No Windows paths or local `.tools` folder are required on the Mac.
+
+```sh
+# Verify changes without sending hardware commands.
+npm run test:ui
+cargo test --locked --manifest-path src-tauri/Cargo.toml
+
+# Build the native M-series app and DMG on your Mac.
+sh scripts/build-macos.sh
+```
+
+Find the app and DMG under `src-tauri/target/release/bundle/`. Hardware access must be tested on the Mac itself; grant Input Monitoring permission if access is denied. The browser-only preview cannot configure the keyboard.
+
+### Continue development on Windows
+
+Use **Windows x64**, Git, Node.js 22+ with npm, Rust stable with the MSVC toolchain, Microsoft C++ Build Tools with the Desktop development with C++ workload/Windows SDK, and WebView2. Run from PowerShell:
+
+```powershell
+git clone https://github.com/diamachi/aula-studio.git
+cd aula-studio
+powershell -File scripts/setup-windows.ps1
+npm run desktop
+```
+
+If build tools are missing, the setup script can request their installation with `-InstallTools`; reopen PowerShell afterwards and run setup again. A source ZIP also works: unpack it and run the commands from its root, skipping `git clone` and `cd`.
+
+```powershell
+npm run test:ui
+cargo test --locked --manifest-path src-tauri/Cargo.toml
+
+# Portable executable plus license notices in dist/.
+powershell -File scripts/build-windows.ps1
+
+# NSIS installer under src-tauri/target/release/bundle/nsis/.
+npm run tauri -- build --bundles nsis
+```
+
+On either machine, use `git pull` before resuming work on a clean checkout and commit/push source changes to move between computers. Keep local edits committed before switching. Do not copy `node_modules`, `.tools`, `web-dist` or `src-tauri/target` between operating systems; setup recreates dependencies and build outputs for the current platform. Keep USB captures and private research files out of commits. See [development details](docs/DEVELOPMENT.md) for tool checks and source packaging.
+
 ### GitHub Actions
 
 **Actions → Desktop builds → Run workflow** builds both platforms and saves downloadable artifacts. Pushing a `v*` tag also publishes release assets after both platform builds succeed. Normal pushes to `main` do not trigger release builds.
@@ -119,7 +180,7 @@ The tested receiver is **05AC:024F**, usage page **FF60**, using its 32-byte rep
 
 The backend serializes HID operations, validates settings and waits for acknowledgments during custom lighting and display transfers. A failed custom-lighting transfer attempts to restore a built-in effect. No firmware flashing commands are used.
 
-Fourteen Rust tests cover packet encoding, acknowledgment handling, image conversion, GIF timing, frame limits and clock validation. Production-DOM UI checks cover selection/apply behavior, palette and interface-size persistence, connection/battery status, display navigation and clock invocation. Passing CI verifies the software checks; physical hardware testing is listed separately above.
+Fifteen Rust tests cover packet encoding, acknowledgment handling, image conversion, GIF timing, frame limits and clock validation. Production-DOM UI checks cover selection/apply behavior, palette and interface-size persistence, connection/battery status, display navigation and clock invocation. Passing CI verifies the software checks; physical hardware testing is listed separately above.
 
 - [Per-key protocol and layout provenance](research/per-key-provenance.md)
 - [Wired display protocol](research/display-protocol.md)
@@ -132,4 +193,4 @@ USB captures can contain keystrokes and unrelated device traffic. Keep raw captu
 
 Tauri uses the operating system’s WebView2/WebKit engine with a Rust backend. It does not bundle Chromium, Electron, Node or Python into the desktop app.
 
-Original source is [MIT licensed](LICENSE). Wireless RGB/battery and wired display work build on [VitalyArt/Aula-F75-Max-Driver](https://github.com/VitalyArt/Aula-F75-Max-Driver); wireless per-key framing builds on [thibaultmiclo/aula-driver](https://github.com/thibaultmiclo/aula-driver). Key geometry and LED indices follow the official F75 Max layout, as described in the provenance notes. Retain [the upstream notice](research/LICENSE.upstream) and [per-key notice](research/LICENSE.perkey) when redistributing derived code. Vendor executable, firmware and artwork are not distributed.
+Original source is [MIT licensed](LICENSE). The bundled DM Serif Display fonts are licensed under the [SIL Open Font License](src/assets/fonts/OFL-DMSerifDisplay.txt). Wireless RGB/battery and wired display work build on [VitalyArt/Aula-F75-Max-Driver](https://github.com/VitalyArt/Aula-F75-Max-Driver); wireless per-key framing builds on [thibaultmiclo/aula-driver](https://github.com/thibaultmiclo/aula-driver). Key geometry and LED indices follow the official F75 Max layout, as described in the provenance notes. Retain [the upstream notice](research/LICENSE.upstream) and [per-key notice](research/LICENSE.perkey) when redistributing derived code. Vendor executable, firmware and artwork are not distributed.

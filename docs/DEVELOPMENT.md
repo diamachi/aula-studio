@@ -83,3 +83,7 @@ node scripts/capture-screenshots.mjs
 ```
 
 The default browser path is Windows Edge. On another setup, set `BROWSER_PATH` to a compatible Chromium-based browser executable before running the script. Images are saved under `docs/screenshots/`. Playwright is local documentation tooling, not an application dependency.
+
+## Moving between Windows and Mac
+
+Clone or pull the same Git repository on each computer. Use `src/` for frontend changes and `src-tauri/src/` for HID/backend changes. Run the setup script on the new host instead of copying Windows toolchains, `node_modules` or Rust target output. Lockfiles and bundled fonts are tracked; dependencies, local research and caches are excluded. Build and hardware-test on each native platform. The README contains full platform-specific quick starts.

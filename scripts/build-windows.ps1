@@ -9,4 +9,5 @@ try {
     Copy-Item src-tauri/target/release/aula-studio.exe dist/AULA-Studio.exe -Force
     Copy-Item research/LICENSE.upstream dist/LICENSE.upstream -Force
     Copy-Item research/LICENSE.perkey dist/LICENSE.perkey -Force
+    Copy-Item src/assets/fonts/OFL-DMSerifDisplay.txt dist/OFL-DMSerifDisplay.txt -Force
 } finally { Pop-Location }

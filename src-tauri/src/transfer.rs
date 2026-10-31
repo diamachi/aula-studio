@@ -38,7 +38,7 @@ fn transfer(io: &impl ReportIo, packets: &[[u8; 33]], pause: impl Fn()) -> Resul
     init[32] = 2;
     exchange(io, &init).map_err(|e| format!("Receiver initialization failed: {e}"))?;
     for (index, packet) in packets.iter().enumerate() {
-        exchange(io, packet).map_err(|e| format!("Custom lighting stopped at packet {}/{}: {e}", index+1, packets.len()))?;
+        exchange(io, packet).map_err(|e| format!("Configuration stopped at packet {}/{}: {e}", index+1, packets.len()))?;
         pause();
     }
     Ok(())

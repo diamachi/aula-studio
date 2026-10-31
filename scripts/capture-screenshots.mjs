@@ -13,7 +13,7 @@ const { chromium } = require('playwright-core');
 const output = resolve(root, 'docs/screenshots');
 const web = resolve(root, 'web-dist');
 const layout = JSON.parse(await readFile(resolve(root, 'src/key-layout.json'), 'utf8'));
-const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
+const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.ttf': 'font/ttf' };
 const server = createServer(async (req, res) => {
   try {
     const path = resolve(web, '.' + new URL(req.url, 'http://localhost').pathname.replace(/\/$/, '/index.html'));
@@ -54,16 +54,20 @@ try {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.getByText('84%', { exact: true }).waitFor();
+  await page.evaluate(() => document.fonts.ready);
   await page.addStyleTag({ content: '*{animation:none!important;transition:none!important;caret-color:transparent!important}' });
   // Make time-dependent text deterministic without modifying the application source.
   await page.locator('.battery-block small').evaluate(el => { el.textContent = 'Updated just now'; });
   await page.setViewportSize({ width: 1600, height: 1500 });
+  await page.setViewportSize({ width: 1600, height: await page.evaluate(() => document.documentElement.scrollHeight + 32) });
   await page.screenshot({ path: resolve(output, 'lighting-dark.png'), fullPage: true });
   await page.getByRole('button', { name: 'Switch to light mode' }).click();
   await page.getByRole('button', { name: 'Per-key colors', exact: true }).click();
   await page.getByRole('button', { name: 'WASD', exact: true }).click();
   await page.setViewportSize({ width: 1600, height: 1350 });
+  await page.setViewportSize({ width: 1600, height: await page.evaluate(() => document.documentElement.scrollHeight + 32) });
   await page.screenshot({ path: resolve(output, 'per-key-light.png'), fullPage: true });
+  await page.locator('.sleep-panel').screenshot({ path: resolve(output, 'sleep-timer-light.png') });
   await page.getByRole('button', { name: 'Switch to dark mode' }).click();
   await page.getByRole('button', { name: 'Mini display', exact: true }).click();
   await page.setViewportSize({ width: 1600, height: 1100 });
@@ -80,7 +84,7 @@ try {
   await page.getByText('Still image · 9 transfer blocks', { exact: true }).waitFor();
   await page.screenshot({ path: resolve(output, 'mini-display-dark.png'), fullPage: true });
   if (errors.length) throw new Error(errors.join('\n'));
-  console.log('Saved three isolated UI screenshots to docs/screenshots. Hardware access was disabled.');
+  console.log('Saved four isolated UI screenshots to docs/screenshots. Hardware access was disabled.');
 } finally {
   await browser?.close();
   await new Promise(resolve => server.close(resolve));
