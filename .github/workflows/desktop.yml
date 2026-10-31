@@ -4,7 +4,6 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: [main]
     tags: ['v*']
 jobs:
   desktop:
@@ -17,9 +16,6 @@ jobs:
             bundles: nsis
           - os: macos-latest
             platform: macos-arm64
-            bundles: dmg
-          - os: macos-15-intel
-            platform: macos-x64
             bundles: dmg
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30

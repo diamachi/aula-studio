@@ -1,7 +1,7 @@
 # AULA Studio
 
 A lightweight desktop configurator for the **AULA F75 Max**, built with Tauri 2,
-React, TypeScript and Rust. Windows and macOS share the same source. No Python,
+React, TypeScript and Rust. Windows and Apple Silicon macOS share the same source. No Python,
 Electron, account, cloud service, or bundled Node runtime is required to use it.
 
 Unofficial community project; not affiliated with AULA or EPOMAKER.
@@ -16,7 +16,7 @@ Unofficial community project; not affiliated with AULA or EPOMAKER.
 | Pastel light/dark themes and flat 2D preview | Implemented |
 | Per-key editor, groups, rectangle selection and local saved layouts | Implemented in UI |
 | Per-key upload over 2.4 GHz | Confirmed working on the user's Windows keyboard in 0.2.1 |
-| macOS | Source/build scripts provided; not hardware-tested |
+| macOS (Apple Silicon / M-series) | Native build provided; not hardware-tested |
 | TFT uploads, key remapping, Bluetooth configuration | Not implemented |
 
 Version 0.2.1 was checked against an official-app USB capture. The user confirmed
@@ -54,7 +54,8 @@ returns to ordinary lighting.
 Requirements: Node.js 22+, Rust stable, and the
 [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/).
 Windows needs Microsoft C++ Build Tools and WebView2. macOS needs Xcode command
-line tools. Build native binaries on their target OS.
+line tools. Build native binaries on their target OS. The release workflow targets Windows
+x64 and Apple Silicon (M-series) macOS only; Intel macOS builds are excluded.
 
 ```sh
 npm ci
