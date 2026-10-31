@@ -10,12 +10,12 @@ export function SleepPanel({ disabled, apply }: { disabled: boolean; apply: (set
   });
   const [sent, setSent] = useState('');
   useEffect(() => { try { localStorage.setItem('aula.sleep.v1', JSON.stringify(settings)); } catch {} setSent(''); }, [settings]);
-  return <section className="panel sleep-panel"><div className="section-title"><h2><Moon size={17}/> Rest a little</h2></div><p>Put the keyboard to sleep after inactivity.</p>
+  return <section className="panel sleep-panel"><div className="sleep-heading"><div className="sleep-icon"><Moon size={23}/></div><div><h2>Rest a little</h2><p>Put the keyboard to sleep after inactivity.</p></div><span className="sleep-connection">2.4 GHz · Power saving</span></div><div className="sleep-main">
     <div className="sleep-options" role="group" aria-label="Keyboard sleep timeout">{options.map(o => <button key={o.value} aria-pressed={settings.timeout === o.value} disabled={disabled} onClick={() => setSettings(s => ({ ...s, timeout: o.value }))}><b>{o.label}</b><small>{o.sub}</small></button>)}</div>
-    <details><summary>Keyboard behavior</summary><p>Sleep and these settings are applied together. Match them to your preferences; current keyboard settings cannot be read back.</p>
+    <div className="sleep-apply"><button className="apply-button" disabled={disabled} onClick={async () => { if (await apply(settings)) setSent(`Sleep setting sent: ${options.find(o => o.value === settings.timeout)?.label}.`); }}>Apply sleep timer</button><p className="sleep-status" role="status">{sent || 'Saved here; send when ready.'}</p></div></div>
+    <details><summary>Keyboard behavior <span>Shortcut locks, Fn layer &amp; key response</span></summary><p>Sleep and these settings are applied together. Match them to your preferences; current keyboard settings cannot be read back.</p><div className="sleep-behavior-grid">
       {([{ key: 'disableWin', label: 'Disable Windows key' }, { key: 'disableAltF4', label: 'Disable Alt + F4' }, { key: 'disableAltTab', label: 'Disable Alt + Tab' }, { key: 'fnToggle', label: 'Toggle Fn layer instead of holding' }] as const).map(o => <label className="sleep-check" key={o.key}><input type="checkbox" checked={settings[o.key]} disabled={disabled} onChange={e => setSettings(s => ({ ...s, [o.key]: e.target.checked }))}/>{o.label}</label>)}
       <label className="sleep-response">Key response<select aria-label="Key response level" value={settings.response} disabled={disabled} onChange={e => setSettings(s => ({ ...s, response: +e.target.value }))}>{[1,2,3,4,5].map(n => <option key={n} value={n}>Level {n}{n === 1 ? ' · Fastest' : n === 5 ? ' · Most conservative' : ''}</option>)}</select></label>
-    </details><p className="sleep-companion-note">Also applies the choices in Keyboard behavior.</p>
-    <button className="apply-button" disabled={disabled} onClick={async () => { if (await apply(settings)) setSent(`Sleep setting sent: ${options.find(o => o.value === settings.timeout)?.label}.`); }}>Apply sleep timer</button><p className="sleep-status" role="status">{sent || 'Saved here; send to the keyboard when ready.'}</p>
+    </div></details><p className="sleep-companion-note">The timer and your Keyboard behavior choices are applied together.</p>
   </section>;
 }

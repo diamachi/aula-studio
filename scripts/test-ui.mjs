@@ -48,6 +48,11 @@ try {
   size.value='auto';size.dispatchEvent(new window.Event('change',{bubbles:true}));await wait();
   assert.equal(window.document.documentElement.dataset.uiSize,'auto');
 
+  button('Switch to dark mode').click(); await wait();
+  assert.equal(calls.filter(c => c.command === 'set_app_theme').at(-1).args.theme, 'dark', 'Native title bar follows the app theme');
+  button('Switch to light mode').click(); await wait();
+  assert.equal(calls.filter(c => c.command === 'set_app_theme').at(-1).args.theme, 'light');
+
   button('Per-key colors').click(); await wait();
   assert.equal(button('Per-key colors').getAttribute('aria-pressed'), 'true');
   button('WASD').click(); await wait();
@@ -68,6 +73,8 @@ try {
   assert.equal(JSON.parse(window.localStorage.getItem('aula.palette.v1'))[0], 'A8C692');
   assert.equal(window.document.querySelector('.swatches button').getAttribute('aria-label'), 'Preset 1, color A8C692');
 
+  assert.ok(window.document.querySelector('.workspace > .sleep-panel'), 'Sleep is a full-width workspace section');
+  assert.equal(window.document.querySelector('.control-column .sleep-panel'), null, 'Sleep is outside the color rail');
   assert.equal(calls.some(c => c.command === 'apply_sleep'), false, 'Sleep is never written automatically');
   button('1 min').click(); await wait();
   assert.equal(JSON.parse(window.localStorage.getItem('aula.sleep.v1')).timeout, 1);

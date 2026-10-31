@@ -39,6 +39,7 @@ try {
       invoke: async (command, args) => {
         if (command === 'scan_receivers') return [{ id: 'documentation-preview', name: 'F75 Max', interface: 3, usage: 97 }];
         if (command === 'read_battery') return 84;
+        if (command === 'set_app_theme') return null;
         if (command === 'scan_display') return { connected: true, displayAvailable: true, message: 'Wired display ready' };
         if (command === 'prepare_display') {
           const bitmap = await createImageBitmap(new Blob([new Uint8Array(args.bytes)], { type: 'image/png' }));
@@ -62,11 +63,14 @@ try {
   await page.setViewportSize({ width: 1600, height: await page.evaluate(() => document.documentElement.scrollHeight + 32) });
   await page.screenshot({ path: resolve(output, 'lighting-dark.png'), fullPage: true });
   await page.getByRole('button', { name: 'Switch to light mode' }).click();
+  await page.screenshot({ path: resolve(output, 'lighting-light.png'), fullPage: true });
   await page.getByRole('button', { name: 'Per-key colors', exact: true }).click();
   await page.getByRole('button', { name: 'WASD', exact: true }).click();
   await page.setViewportSize({ width: 1600, height: 1350 });
   await page.setViewportSize({ width: 1600, height: await page.evaluate(() => document.documentElement.scrollHeight + 32) });
   await page.screenshot({ path: resolve(output, 'per-key-light.png'), fullPage: true });
+  await page.locator('.sleep-panel details').evaluate(el => { el.open = true; });
+  await page.setViewportSize({ width: 1600, height: await page.evaluate(() => document.documentElement.scrollHeight + 32) });
   await page.locator('.sleep-panel').screenshot({ path: resolve(output, 'sleep-timer-light.png') });
   await page.getByRole('button', { name: 'Switch to dark mode' }).click();
   await page.getByRole('button', { name: 'Mini display', exact: true }).click();
@@ -84,7 +88,7 @@ try {
   await page.getByText('Still image · 9 transfer blocks', { exact: true }).waitFor();
   await page.screenshot({ path: resolve(output, 'mini-display-dark.png'), fullPage: true });
   if (errors.length) throw new Error(errors.join('\n'));
-  console.log('Saved four isolated UI screenshots to docs/screenshots. Hardware access was disabled.');
+  console.log('Saved five isolated UI screenshots to docs/screenshots. Hardware access was disabled.');
 } finally {
   await browser?.close();
   await new Promise(resolve => server.close(resolve));

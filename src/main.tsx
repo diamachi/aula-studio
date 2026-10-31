@@ -99,7 +99,11 @@ function App() {
   const [uiSize, setUiSize] = useState(() => { try { const saved=localStorage.getItem('aula.ui-size'); if(saved && ['auto','100','125','150'].includes(saved))return saved; } catch {} return 'auto'; });
   useEffect(()=>{document.documentElement.dataset.uiSize=uiSize;try{localStorage.setItem('aula.ui-size',uiSize);}catch{}},[uiSize]);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => { try { const saved = localStorage.getItem('aula.theme'); if (saved === 'light' || saved === 'dark') return saved; } catch {} return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; });
-  useEffect(() => { document.documentElement.dataset.theme = theme; try { localStorage.setItem('aula.theme', theme); } catch {} }, [theme]);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('aula.theme', theme); } catch {}
+    if (isTauri()) void invoke('set_app_theme', { theme }).catch(e => console.warn('Native title bar theme:', e));
+  }, [theme]);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [lightingTab, setLightingTab] = useState<'effects' | 'keys'>('effects');
   const [keyColors, setKeyColors] = useState<KeyColors>(() => loadKeyColors(settings.color));
@@ -200,9 +204,10 @@ function App() {
           <div className="control-column">
             <section className="panel color-panel"><div className="section-title"><h2><Palette size={17}/> Color story</h2><span className="mini-label">RGB</span></div><ColorPicker color={settings.color} onChange={color => update({ color })}/><div className="toggle-row" style={lightingTab === 'keys' ? {display: 'none'} : undefined}><div><b>Go multicolor</b><small>Let the whole spectrum in.</small></div><button className={`toggle ${settings.colorful ? 'on' : ''}`} aria-label="Multicolor effect" role="switch" aria-checked={settings.colorful} onClick={() => update({ colorful: !settings.colorful })}><span/></button></div></section>
             <section className="panel tuning-panel"><div className="section-title"><h2><SlidersHorizontal size={17}/> Fine-tune</h2></div>{([{ key: 'brightness', label: 'Brightness', icon: Sun, end: 'Bright' }, { key: 'speed', label: 'Motion speed', icon: Zap, end: 'Fast' }] as const).filter(control => lightingTab === 'effects' || control.key === 'brightness').map(control => <div className="slider-control" key={control.key}><label htmlFor={control.key}><span><control.icon size={14}/>{control.label}</span><b>{settings[control.key]}<i> / 5</i></b></label><input id={control.key} type="range" min="1" max="5" value={settings[control.key]} style={{ '--range-fill': `${(settings[control.key] - 1) * 25}%` } as React.CSSProperties} onChange={e => update({ [control.key]: +e.target.value })}/><div className="range-labels"><span>{control.key === 'brightness' ? 'Subtle' : 'Slow'}</span><span>{control.end}</span></div></div>)}<label className="direction-row">Direction<div className="select-wrap"><select aria-label="Effect direction" value={settings.direction} onChange={e => update({ direction: +e.target.value })}><option value={0}>Right →</option><option value={1}>Down ↓</option><option value={2}>Left ←</option><option value={3}>Up ↑</option></select><ChevronDown size={12}/></div></label></section>
-            <SleepPanel disabled={!id || receiverState !== 'connected' || busy} apply={applySleep}/>
           </div>
         </div>
+
+        <SleepPanel disabled={!id || receiverState !== 'connected' || busy} apply={applySleep}/>
 
         <footer className="apply-footer"><div className={`feedback ${error ? 'error' : ''}`} role="status" aria-live="polite">{error ? <CircleHelp size={15}/> : applied === serial ? <Check size={15}/> : <span className="status-dot"/>}<span>{notice || (dirty ? 'Make a few changes. Make it your own.' : 'Your lighting is up to date.')}</span></div><button className="apply-button" onClick={() => void apply()} disabled={!id || receiverState !== 'connected' || busy}>{busy ? <LoaderCircle size={16} className="spin"/> : !dirty ? <Check size={16}/> : <Zap size={16}/>} {busy ? 'Working…' : !dirty ? 'Lighting applied' : 'Apply lighting'}<ArrowRight size={16}/></button></footer>
         <div className="footnote"><span>DESIGNED FOR YOUR EVERYDAY.</span><span>Changes apply when you’re ready.</span></div></>}

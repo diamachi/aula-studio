@@ -18,7 +18,13 @@ The top panel shows the selected receiver interface and keyboard-reported batter
 
 Choose an effect card or explore all **20 effects** in the effect chooser. Use the color area, hue slider, system picker or hex input, then adjust brightness, speed and direction. Click **Apply lighting** to send the settings.
 
-![AULA Studio dark interface showing receiver status, battery, RGB effects and color controls](docs/screenshots/lighting-dark.png)
+<table>
+  <tr><th>Warm light</th><th>Charcoal dark</th></tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/lighting-light.png" alt="AULA Studio main window in warm light mode, with lighting controls and a full-width sleep section" width="100%"></td>
+    <td width="50%"><img src="docs/screenshots/lighting-dark.png" alt="AULA Studio main window in charcoal dark mode, with lighting controls and a full-width sleep section" width="100%"></td>
+  </tr>
+</table>
 
 ### Per-key colors
 
@@ -50,7 +56,7 @@ Expand **Keyboard behavior** to choose shortcut locks, Fn behavior and response 
 
 Choose warm oat-and-apricot light mode with a matching sand sidebar, or charcoal dark mode. Locally bundled DM Serif Display headings pair roman and italic lettering. The interface scales with the window, with a saved **UI size** override: Auto, 100%, 125% or 150%.
 
-All seven palette slots are editable. Pick a color, click **Save color**, then choose the slot to replace. Theme, palette, lighting settings and the per-key layout are saved locally.
+All seven palette slots are editable. Pick a color, click **Save color**, then choose the slot to replace. Theme, palette, lighting settings and the per-key layout are saved locally. The native title bar follows the app’s light/dark mode; Windows 11 also receives matching cream/charcoal caption colors.
 
 ## What it does
 

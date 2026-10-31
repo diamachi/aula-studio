@@ -2,6 +2,7 @@
 mod protocol;
 mod transfer;
 mod display;
+mod appearance;
 use hidapi::{DeviceInfo, HidApi, HidDevice};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -115,6 +116,6 @@ async fn read_battery(id: String) -> Result<Option<u8>, String> {
 fn main() {
     tauri::Builder::default()
         .manage(display::DisplayState::default())
-        .invoke_handler(tauri::generate_handler![scan_receivers, apply_lighting, apply_per_key, apply_sleep, read_battery, display::scan_display, display::prepare_display, display::upload_display, display::sync_display_clock])
+        .invoke_handler(tauri::generate_handler![scan_receivers, apply_lighting, apply_per_key, apply_sleep, read_battery, display::scan_display, display::prepare_display, display::upload_display, display::sync_display_clock, appearance::set_app_theme])
         .run(tauri::generate_context!()).expect("Unable to launch AULA Studio");
 }
