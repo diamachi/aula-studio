@@ -11,3 +11,5 @@ Upload: feature `04 18`, feature `04 72` (slot at byte 2, block count little end
 Clock: `04 18`, `04 28` with byte 8 set to 1, data `00 01 5A YY MM DD hh mm ss 00 weekday` with `AA 55` at bytes 62–63, `04 02`. Weekday is Sunday=0. Command replies echo the first two bytes and set byte 3 to 1. Data replies echo the payload.
 
 No wireless TFT command mapping is inferred, and no reset, memory-clear or firmware-update commands are used.
+
+See [wireless display audit](wireless-display-audit.md) for the receiver descriptors, official driver trace, and remaining limits of the 2.4 GHz investigation.
