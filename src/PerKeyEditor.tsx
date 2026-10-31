@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, MousePointer2, Paintbrush, RotateCcw } from 'lucide-react';
 import layout from './key-layout.json';
 import './per-key.css';
@@ -26,6 +26,16 @@ function label(name: string) {
 export function PerKeyEditor({ colors, color, onChange }: { colors: KeyColors; color: string; onChange: (colors: KeyColors) => void }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [previous, setPrevious] = useState<KeyColors | null>(null);
+  const lastColor = useRef(color);
+  useEffect(() => {
+    if (color === lastColor.current) return;
+    lastColor.current = color;
+    if (!selected.size) return;
+    setPrevious({ ...colors });
+    const next = { ...colors };
+    selected.forEach(index => { next[index] = color; });
+    onChange(next);
+  }, [color, colors, selected, onChange]);
   const [rectangle, setRectangle] = useState<{left:number;top:number;width:number;height:number}|null>(null);
   const gesture = useRef<{x:number;y:number;additive:boolean;before:Set<number>;dragged:boolean;key:number|null}|null>(null);
   function dragStart(e: React.PointerEvent<HTMLDivElement>) {
@@ -71,7 +81,7 @@ export function PerKeyEditor({ colors, color, onChange }: { colors: KeyColors; c
     </div>
     <div className="key-groups" aria-label="Key group shortcuts">{groups.map(group => <button key={group.name} onClick={() => setSelected(new Set(layout.filter(group.test).map(k => k.index)))}>{group.name}</button>)}<button className="clear-key-selection" disabled={!selected.size} onClick={() => setSelected(new Set())}>Deselect</button></div>
     <div className="paint-actions"><button className="paint-selected" disabled={!selected.size} onClick={() => paint(color)}><Paintbrush size={15}/><span className="paint-chip" style={{ background: `#${color}` }}/>{selected.size ? `Color ${selected.size} selected ${selected.size === 1 ? 'key' : 'keys'}` : 'Select keys to color'}</button><button disabled={!selected.size} onClick={() => paint('000000')}>Turn off</button><button disabled={!previous} aria-label="Undo last key color edit" onClick={() => { if (previous) { onChange(previous); setPrevious(null); } }}><RotateCcw size={14}/> Undo</button></div>
-    <p className="custom-mode-note">Choose a color on the right, color your selection, then Apply lighting. Custom lighting replaces the current effect.</p>
-    <details className="per-key-experimental"><summary>Experimental · 2.4 GHz custom lighting</summary><p>Uses the official F75 Max key map and a community-decoded wireless upload command. Physical behavior is not verified yet. The initial canvas uses your chosen color; existing device colors cannot be read. If a key differs on your batch, report which key lit up. Switch back to Effects and Apply to restore a built-in effect.</p></details>
+    <p className="custom-mode-note">Select keys, then change the color on the right to paint them. Apply lighting sends the layout to your keyboard. Custom lighting replaces the current effect.</p>
+    <details className="per-key-experimental"><summary>2.4 GHz custom lighting · capture-based protocol</summary><p>The official capture's WASD-green sequence has been physically confirmed. This editor uses the same key map and packet format. Saved colors are local; existing device colors cannot be read. If a key differs on your batch, report which key lit up. Switch back to Effects and Apply to restore a built-in effect.</p></details>
   </section>;
 }

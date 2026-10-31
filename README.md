@@ -15,20 +15,22 @@ Unofficial community project; not affiliated with AULA or EPOMAKER.
 | Battery percentage and refresh | Working on Windows |
 | Pastel light/dark themes and flat 2D preview | Implemented |
 | Per-key editor, groups, rectangle selection and local saved layouts | Implemented in UI |
-| **Per-key upload over 2.4 GHz** | **Not working on the user's keyboard; investigation paused** |
+| Per-key upload over 2.4 GHz | Confirmed working on the user's Windows keyboard in 0.2.1 |
 | macOS | Source/build scripts provided; not hardware-tested |
 | TFT uploads, key remapping, Bluetooth configuration | Not implemented |
 
-Receiver acknowledgment tests succeeded after initialization was added, but the
-user reports that custom colors still do not appear. **Acknowledged USB packets
-are not proof of a working lighting feature.** Do not rely on per-key upload yet.
-A capture of the official software is needed before further protocol changes.
+Version 0.2.1 was checked against an official-app USB capture. The user confirmed
+both the captured WASD-green sequence and the updated app's custom colors on the
+physical keyboard. Other firmware batches and macOS still need hardware tests.
 
 ## Use
 
 Plug in the USB receiver, switch the keyboard to 2.4G, close other driver apps,
 and open AULA Studio. Choose an effect and color, then click **Apply lighting**.
-The battery panel refreshes automatically while the window is visible.
+The battery/receiver panel is at the top with readable status text. Battery
+refreshes automatically while visible. Receiver presence is checked every five
+seconds; the badge turns green only while the USB receiver is detected. This
+does not assert that the wireless keyboard is awake.
 Settings persist locally as editor preferences; they are not read from hardware.
 
 The supported receiver is `05AC:024F`, vendor usage page `FF60`, with 32-byte
@@ -38,11 +40,13 @@ configuration protocols are not assumed compatible.
 
 The UI includes a saturation/value picker, hue slider, system color picker, hex
 input, palette swatches, effect cards, and a styled dropdown with descriptions.
-The preview is illustrative. Dark/light theme preference is saved locally.
+All seven palette slots are editable: choose a color, click **Save color**, then
+click the slot to replace. Presets persist locally. The preview is illustrative.
+Dark/light theme preference is saved locally. The active editor tab is outlined.
 
-The experimental per-key editor supports clicks, drag-box selection, additive
-Shift/Ctrl/Command-drag, group presets, painting, turn-off, and undo. Its upload
-is currently unresolved. Switching to Effects and applying a built-in effect
+The per-key editor supports clicks, drag-box selection, additive
+Shift/Ctrl/Command-drag, group presets, painting, turn-off, and undo. Changing
+the picker automatically paints selected keys locally; Apply sends the full layout. Switching to Effects and applying a built-in effect
 returns to ordinary lighting.
 
 ## Build from source
@@ -60,7 +64,7 @@ npm run desktop
 Validation and builds:
 
 ```sh
-npm run build
+npm run test:ui
 cargo test --locked --manifest-path src-tauri/Cargo.toml
 npm run tauri -- build --no-bundle
 ```
@@ -86,7 +90,8 @@ receiver traffic on Windows with Wireshark + USBPcap, starting before opening
 the official app, and make one controlled color change at a time.
 
 Keep captures private: they may include keystrokes or unrelated USB traffic.
-Do not upload them in a public issue. Source control ignores packet captures.
+Do not upload them in a public issue. Source control ignores packet captures. The user's capture is kept private;
+only protocol facts and synthetic regression vectors are included in the source.
 
 ## Protocol and attribution
 
@@ -103,3 +108,10 @@ final test; no firmware flashing commands are used.
 
 MIT license. Retain the upstream notices in `research/LICENSE.upstream` and
 `research/LICENSE.perkey` when redistributing derived code.
+
+## 0.2.1 validation
+
+Ten Rust tests and a production-DOM UI check pass. UI checks cover per-key color
+selection and payload delivery, saved palette replacement, valid global-setting
+persistence, top-panel order, battery display, and disabling Apply on disconnect.
+The raw USB capture is not distributed.

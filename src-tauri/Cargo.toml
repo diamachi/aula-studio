@@ -1,6 +1,6 @@
 [package]
 name = "aula-studio"
-version = "0.2.0"
+version = "0.2.1"
 description = "AULA F75 Max wireless lighting and battery"
 edition = "2021"
 

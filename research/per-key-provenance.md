@@ -25,3 +25,12 @@ be absent. Live interface-3 probe returned 02/00/00 after init, 05/10/00 after
 custom mode, and matching 14/length/sequence replies for all 21 table chunks.
 Interface 3 descriptor: 32-byte input/output. Interface 4: 64-byte input/output.
 Acknowledgment completion is confirmed; visual color correctness is not claimed.
+
+## Official capture comparison and physical confirmation (0.2.1)
+
+The private capture's W-red table matches the app's indexed RGB layout byte for
+byte. Its final transaction contains W/A/S/D at RGB 339933 and other keys off.
+Replaying only the lighting packets on interface 3 was physically confirmed by
+the user. The user subsequently confirmed the updated 0.2.1 editor's custom
+colors match the keyboard. No capture bytes, keystrokes, or raw USB dumps are
+published. The Rust suite uses a synthetic W-red regression vector.

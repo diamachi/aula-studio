@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { invoke, isTauri } from '@tauri-apps/api/core';
-import { Activity, ArrowDownRight, ArrowRight, Battery, Check, ChevronDown, ChevronRight, CircleHelp, Command, Keyboard, Lightbulb, LoaderCircle, Palette, Radio, RefreshCw, SlidersHorizontal, Sparkles, Sun, Waves, X, Zap } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowRight, Battery, Check, ChevronDown, ChevronRight, CircleHelp, Command, Keyboard, Lightbulb, LoaderCircle, Palette, Radio, RefreshCw, Save, SlidersHorizontal, Sparkles, Sun, Waves, X, Zap } from 'lucide-react';
 import './style.css';
 import './refinements.css';
 import './pastel.css';
@@ -36,6 +36,12 @@ function hexToHsv(hex: string): [number, number, number] {
 }
 
 function ColorPicker({ color, onChange }: { color: string; onChange: (hex: string) => void }) {
+  const [palette, setPalette] = useState<string[]>(() => {
+    try { const saved=JSON.parse(localStorage.getItem('aula.palette.v1') || 'null'); if(Array.isArray(saved) && saved.length===7 && saved.every(c=>typeof c==='string' && /^[0-9a-f]{6}$/i.test(c)))return saved; } catch {}
+    return swatches;
+  });
+  const [savingPreset, setSavingPreset] = useState(false);
+  useEffect(()=>{try{localStorage.setItem('aula.palette.v1',JSON.stringify(palette));}catch{}},[palette]);
   const [hsv, setHsv] = useState<[number, number, number]>(hexToHsv(color));
   const [hex, setHex] = useState(color);
   const emitted = useRef(color);
@@ -64,7 +70,9 @@ function ColorPicker({ color, onChange }: { color: string; onChange: (hex: strin
       <label className="native-color" title="Open system color picker" style={{ backgroundColor: `#${color}` }}><input aria-label="Open system color picker" type="color" value={`#${color}`} onChange={e => onChange(e.target.value.slice(1).toUpperCase())} /></label>
       <label className="hex-input"><span>#</span><input aria-label="Hex color" maxLength={6} value={hex} spellCheck={false} onBlur={() => setHex(color)} onChange={e => { const value = e.target.value.replace(/[^0-9a-f]/gi, '').toUpperCase(); setHex(value); if (value.length === 6) onChange(value); }} /><span>HEX</span></label>
     </div>
-    <div className="swatches">{swatches.map(c => <button key={c} aria-label={`Color ${c}`} title={`#${c}`} style={{ backgroundColor: `#${c}` }} onClick={() => onChange(c)} className={color === c ? 'chosen' : ''}>{color === c && <Check size={12} />}</button>)}</div>
+    <div className="palette-heading"><span>Your palette</span><button className={savingPreset ? 'saving-preset' : ''} onClick={()=>setSavingPreset(!savingPreset)} aria-pressed={savingPreset}><Save size={12}/>{savingPreset ? 'Cancel' : 'Save color'}</button></div>
+    <div className={`swatches ${savingPreset ? 'choose-preset-slot' : ''}`}>{palette.map((c,index) => <button key={index} aria-label={savingPreset ? `Save color ${color} to preset ${index+1}` : `Preset ${index+1}, color ${c}`} title={savingPreset ? `Save #${color} here` : `Preset ${index+1}: #${c}`} style={{ backgroundColor: `#${c}` }} onClick={() => {if(savingPreset){setPalette(old=>old.map((value,i)=>i===index ? color : value));setSavingPreset(false);}else onChange(c);}} className={color === c ? 'chosen' : ''}>{savingPreset ? <span className="preset-number">{index+1}</span> : color === c && <Check size={12} />}</button>)}</div>
+    <p className="palette-hint" aria-live="polite">{savingPreset ? `Choose a slot to save #${color}.` : 'Seven colors, saved on this computer.'}</p>
   </div>;
 }
 
@@ -91,6 +99,7 @@ function App() {
   useEffect(() => { try { localStorage.setItem('aula.perkey.v1', JSON.stringify(keyColors)); } catch {} }, [keyColors]);
   const [devices, setDevices] = useState<Receiver[]>([]);
   const [id, setId] = useState('');
+  const [receiverState, setReceiverState] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [busy, setBusy] = useState(false);
   const [battery, setBattery] = useState<number | null>(null);
   const [batteryState, setBatteryState] = useState('Not checked');
@@ -106,20 +115,22 @@ function App() {
   const serial = JSON.stringify(lightingTab === 'keys' ? { keyColors, brightness: settings.brightness } : settings);
   const dirty = serial !== applied;
   function update(patch: Partial<Settings>) { setSettings(s => ({ ...s, ...patch })); }
-  useEffect(() => { try { localStorage.setItem('aula.settings.v2', serial); } catch { /* optional */ } }, [serial]);
+  useEffect(() => { try { localStorage.setItem('aula.settings.v2', JSON.stringify(settings)); } catch { /* optional */ } }, [settings]);
 
-  const scan = useCallback(async () => {
+  const scan = useCallback(async (quiet = false) => {
     if (lock.current) return;
-    if (!native) { setNotice('Design preview · open the desktop app to connect your keyboard.'); return; }
-    lock.current = true; setBusy(true); setError(false);
+    if (!native) { if (!quiet) setNotice('Design preview · open the desktop app to connect your keyboard.'); setReceiverState('disconnected'); return; }
+    lock.current = true; if (!quiet) { setBusy(true); setError(false); setReceiverState('checking'); }
     try {
       const result = await invoke<Receiver[]>('scan_receivers');
       setDevices(result);
       const next = result.some(d => d.id === selected.current) ? selected.current : result[0]?.id || '';
       setId(next);
-      setNotice(result.length ? 'Receiver found. Your workspace is ready.' : 'No receiver found. Connect the USB dongle and select 2.4G on your keyboard.');
-    } catch (e) { setError(true); setNotice(String(e)); }
-    finally { lock.current = false; setBusy(false); }
+      setReceiverState(next ? 'connected' : 'disconnected');
+      if (!next) { setBattery(null); setBatteryAt(''); setApplied(null); }
+      if (!quiet) setNotice(result.length ? 'Receiver found. Your workspace is ready.' : 'No receiver found. Connect the USB dongle and select 2.4G on your keyboard.');
+    } catch (e) { setReceiverState('disconnected'); setId(''); setBattery(null); if (!quiet) { setError(true); setNotice(String(e)); } }
+    finally { lock.current = false; if (!quiet) setBusy(false); }
   }, [native]);
   const refreshBattery = useCallback(async (receiver: string) => {
     if (!receiver || lock.current || !native) return;
@@ -134,7 +145,7 @@ function App() {
       setBattery(null); setBatteryState('Unavailable'); setError(true); setNotice(String(e));
     } finally { lock.current = false; setBusy(false); }
   }, [native]);
-  useEffect(() => { void scan(); }, [scan]);
+  useEffect(() => { void scan(); const timer=setInterval(()=>void scan(true),5000); return ()=>clearInterval(timer); }, [scan]);
   useEffect(() => {
     setBattery(null); setBatteryAt(''); setBatteryState('Not checked'); setApplied(null);
     const timer = setTimeout(() => void refreshBattery(id), 200);
@@ -149,7 +160,7 @@ function App() {
       if (lightingTab === 'keys') {
         await invoke('apply_per_key', { id, colors: keyLayout.map(key => ({ index: key.index, color: keyColors[key.index] })), brightness: settings.brightness, restore: settings });
       } else { await invoke('apply_lighting', { id, settings }); }
-      setApplied(sent); setNotice(lightingTab === 'keys' ? 'Custom layout sent. Check the physical keys; wireless per-key support is experimental.' : 'Lighting sent. A little more you.');
+      setApplied(sent); setNotice(lightingTab === 'keys' ? 'Custom lighting applied to the keyboard.' : 'Lighting sent. A little more you.');
     } catch (e) { setError(true); setNotice(String(e)); }
     finally { lock.current = false; setBusy(false); }
   }
@@ -159,12 +170,13 @@ function App() {
       <div className="sidebar-label">YOUR WORKSPACE</div>
       <button className="nav-active"><SlidersHorizontal size={17}/> Keyboard studio <span className="tiny-dot"/></button>
       <div className="device-card"><div className="device-icon"><Keyboard size={28}/><span/></div><b>F75 Max</b><small>75% · Mechanical keyboard</small><div className="device-tag"><Radio size={12}/> 2.4 GHz wireless</div></div>
-      <div className="sidebar-bottom"><div className="local-note"><span className="local-dot"/> Made for your desk.</div><p>No accounts. No cloud.<br/>Just you and your keyboard.</p><button onClick={() => setHelp(true)}><CircleHelp size={16}/> Connection guide <ChevronRight size={14}/></button><div className="version">AULA STUDIO <span>v0.2.0</span></div></div>
+      <div className="sidebar-bottom"><div className="local-note"><span className="local-dot"/> Made for your desk.</div><p>No accounts. No cloud.<br/>Just you and your keyboard.</p><button onClick={() => setHelp(true)}><CircleHelp size={16}/> Connection guide <ChevronRight size={14}/></button><div className="version">AULA STUDIO <span>v0.2.1</span></div></div>
     </aside>
     <main>
-      <header className="topbar"><span>Workspace <ChevronRight size={12}/> <b>F75 Max</b></span><div className="topbar-actions"><button className="theme-button" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <SunMoon size={16}/> : <Moon size={16}/>}<span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span></button><div className={`connection-pill ${id ? 'connected' : ''}`}><span/>{id ? 'Receiver connected' : native ? 'Not connected' : 'Design preview'}</div></div></header>
+      <header className="topbar"><span>Workspace <ChevronRight size={12}/> <b>F75 Max</b></span><div className="topbar-actions"><button className="theme-button" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <SunMoon size={16}/> : <Moon size={16}/>}<span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span></button><div className={`connection-pill ${receiverState === 'connected' && id ? 'connected' : ''}`}><span/>{!native ? 'Design preview' : receiverState === 'connected' && id ? 'Receiver connected' : receiverState === 'checking' ? 'Checking receiver…' : 'Receiver disconnected'}</div></div></header>
       <div className="workspace">
         <section className="page-heading"><div><div className="eyebrow">A LITTLE PERSONALITY GOES A LONG WAY</div><h1>Your keys. Your atmosphere<span>.</span></h1><p>Find the light that feels like you.</p></div><button className="icon-button" onClick={() => setHelp(true)} aria-label="Open connection guide"><CircleHelp size={19}/></button></section>
+        <section className="device-strip"><div className="receiver-block"><div className="receiver-icon"><Radio size={19}/></div><div><small>YOUR CONNECTION</small><div className="receiver-select"><select aria-label="Receiver interface" value={id} onChange={e => setId(e.target.value)} disabled={!devices.length || busy}>{!devices.length && <option value="">{native ? 'Connect your receiver' : 'Desktop app required'}</option>}{devices.map(d => <option key={d.id} value={d.id}>2.4 GHz receiver · Interface {d.interface}</option>)}</select><ChevronDown size={12}/></div></div><button className="icon-button" title="Scan receivers" aria-label="Scan receivers" disabled={busy} onClick={() => void scan()}><RefreshCw size={15} className={busy ? 'spin' : ''}/></button></div><div className="battery-block"><Battery size={21}/><div><div className="battery-heading"><b>{battery === null ? '—' : `${battery}%`}</b><span>Battery</span></div><div className="battery-track"><span style={{ width: `${battery ?? 0}%`, background: battery !== null && battery <= 20 ? '#E47B52' : '#83A48B' }}/></div><small>{batteryState === 'Updated' ? `Updated ${batteryAt}` : batteryState === 'Unavailable' ? 'Unavailable · wake keyboard & retry' : batteryState === 'Checking' ? 'Checking…' : 'Waiting for receiver'}</small></div><button className="icon-button" aria-label="Refresh battery" title="Refresh battery" disabled={!id || receiverState !== 'connected' || busy} onClick={() => void refreshBattery(id)}><RefreshCw size={14}/></button></div></section>
         <div className="lighting-tabs" role="group" aria-label="Lighting editor"><button className={lightingTab === 'effects' ? 'active' : ''} aria-pressed={lightingTab === 'effects'} disabled={busy} onClick={() => setLightingTab('effects')}>Effects</button><button className={lightingTab === 'keys' ? 'active' : ''} aria-pressed={lightingTab === 'keys'} disabled={busy} onClick={() => setLightingTab('keys')}>Per-key colors</button></div><div className="layout">
           <div className="primary-column">
             {lightingTab === 'keys' ? <PerKeyEditor colors={keyColors} color={settings.color} onChange={setKeyColors}/> : <><section className="preview-panel"><div className="panel-top"><span className="preview-label"><span/> LIVE COLOR PREVIEW</span><span className="model-badge">F75 MAX <ArrowDownRight size={13}/></span></div><KeyboardPreview settings={settings}/><div className="preview-bottom"><span><span className="color-dot" style={{ background: settings.mode === 0 ? '#666' : `#${settings.color}` }}/>{modes[settings.mode]} <i> / </i>{settings.colorful ? 'Multicolor' : `#${settings.color}`}</span><small>Preview is illustrative</small></div></section>
@@ -175,12 +187,12 @@ function App() {
             <section className="panel tuning-panel"><div className="section-title"><h2><SlidersHorizontal size={17}/> Fine-tune</h2></div>{([{ key: 'brightness', label: 'Brightness', icon: Sun, end: 'Bright' }, { key: 'speed', label: 'Motion speed', icon: Zap, end: 'Fast' }] as const).filter(control => lightingTab === 'effects' || control.key === 'brightness').map(control => <div className="slider-control" key={control.key}><label htmlFor={control.key}><span><control.icon size={14}/>{control.label}</span><b>{settings[control.key]}<i> / 5</i></b></label><input id={control.key} type="range" min="1" max="5" value={settings[control.key]} style={{ '--range-fill': `${(settings[control.key] - 1) * 25}%` } as React.CSSProperties} onChange={e => update({ [control.key]: +e.target.value })}/><div className="range-labels"><span>{control.key === 'brightness' ? 'Subtle' : 'Slow'}</span><span>{control.end}</span></div></div>)}<label className="direction-row">Direction<div className="select-wrap"><select aria-label="Effect direction" value={settings.direction} onChange={e => update({ direction: +e.target.value })}><option value={0}>Right →</option><option value={1}>Down ↓</option><option value={2}>Left ←</option><option value={3}>Up ↑</option></select><ChevronDown size={12}/></div></label></section>
           </div>
         </div>
-        <section className="device-strip"><div className="receiver-block"><div className="receiver-icon"><Radio size={19}/></div><div><small>YOUR CONNECTION</small><div className="receiver-select"><select aria-label="Receiver interface" value={id} onChange={e => setId(e.target.value)} disabled={!devices.length || busy}>{!devices.length && <option value="">{native ? 'Connect your receiver' : 'Desktop app required'}</option>}{devices.map(d => <option key={d.id} value={d.id}>2.4 GHz receiver · Interface {d.interface}</option>)}</select><ChevronDown size={12}/></div></div><button className="icon-button" title="Scan receivers" aria-label="Scan receivers" disabled={busy} onClick={() => void scan()}><RefreshCw size={15} className={busy ? 'spin' : ''}/></button></div><div className="battery-block"><Battery size={21}/><div><div className="battery-heading"><b>{battery === null ? '—' : `${battery}%`}</b><span>Battery</span></div><div className="battery-track"><span style={{ width: `${battery ?? 0}%`, background: battery !== null && battery <= 20 ? '#E47B52' : '#83A48B' }}/></div><small>{batteryState === 'Updated' ? `Updated ${batteryAt}` : batteryState === 'Unavailable' ? 'Unavailable · wake keyboard & retry' : batteryState === 'Checking' ? 'Checking…' : 'Waiting for receiver'}</small></div><button className="icon-button" aria-label="Refresh battery" title="Refresh battery" disabled={!id || busy} onClick={() => void refreshBattery(id)}><RefreshCw size={14}/></button></div></section>
-        <footer className="apply-footer"><div className={`feedback ${error ? 'error' : ''}`} role="status" aria-live="polite">{error ? <CircleHelp size={15}/> : applied === serial ? <Check size={15}/> : <span className="status-dot"/>}<span>{notice || (dirty ? 'Make a few changes. Make it your own.' : 'Your lighting is up to date.')}</span></div><button className="apply-button" onClick={() => void apply()} disabled={!id || busy}>{busy ? <LoaderCircle size={16} className="spin"/> : !dirty ? <Check size={16}/> : <Zap size={16}/>} {busy ? 'Working…' : !dirty ? 'Lighting applied' : 'Apply lighting'}<ArrowRight size={16}/></button></footer>
+
+        <footer className="apply-footer"><div className={`feedback ${error ? 'error' : ''}`} role="status" aria-live="polite">{error ? <CircleHelp size={15}/> : applied === serial ? <Check size={15}/> : <span className="status-dot"/>}<span>{notice || (dirty ? 'Make a few changes. Make it your own.' : 'Your lighting is up to date.')}</span></div><button className="apply-button" onClick={() => void apply()} disabled={!id || receiverState !== 'connected' || busy}>{busy ? <LoaderCircle size={16} className="spin"/> : !dirty ? <Check size={16}/> : <Zap size={16}/>} {busy ? 'Working…' : !dirty ? 'Lighting applied' : 'Apply lighting'}<ArrowRight size={16}/></button></footer>
         <div className="footnote"><span>DESIGNED FOR YOUR EVERYDAY.</span><span>Changes apply when you’re ready.</span></div>
       </div>
     </main>
-    {help && <div className="modal-backdrop" onClick={() => setHelp(false)}><section className="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={e => e.stopPropagation()}><button className="close-modal icon-button" onClick={() => setHelp(false)} aria-label="Close guide"><X size={20}/></button><Radio className="help-symbol" size={30}/><div className="eyebrow">A SIMPLE CONNECTION</div><h2 id="help-title">Meet your receiver.</h2><p>Plug in the F75 Max USB dongle, switch your keyboard to <b>2.4G</b>, and press a key to wake it.</p><ol><li>Close the official driver so the receiver is free.</li><li>Click Scan, then choose a receiver interface.</li><li>Pick a color and effect. Click Apply lighting.</li></ol><p>Two interfaces can appear for one receiver. If one does not respond, try the other. Battery checks run every 30 seconds while the window is visible.</p><div className="help-note">If access fails on macOS, check Input Monitoring permission and reopen the app. Screen uploads require a different wired protocol and are not included.</div><button className="apply-button" onClick={() => setHelp(false)}>Got it <Check size={15}/></button></section></div>}
+    {help && <div className="modal-backdrop" onClick={() => setHelp(false)}><section className="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={e => e.stopPropagation()}><button className="close-modal icon-button" onClick={() => setHelp(false)} aria-label="Close guide"><X size={20}/></button><Radio className="help-symbol" size={30}/><div className="eyebrow">A SIMPLE CONNECTION</div><h2 id="help-title">Meet your receiver.</h2><p>Plug in the F75 Max USB dongle, switch your keyboard to <b>2.4G</b>, and press a key to wake it.</p><ol><li>Close the official driver so the receiver is free.</li><li>Click Scan, then choose a receiver interface.</li><li>Pick a color and effect. Click Apply lighting.</li></ol><p>The app selects the compatible 32-byte receiver interface. Receiver presence is checked every five seconds. Battery checks run every 30 seconds while the window is visible.</p><div className="help-note">If access fails on macOS, check Input Monitoring permission and reopen the app. Screen uploads require a different wired protocol and are not included.</div><button className="apply-button" onClick={() => setHelp(false)}>Got it <Check size={15}/></button></section></div>}
   </div>;
 }
 

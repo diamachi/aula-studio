@@ -103,6 +103,19 @@ mod tests {
         assert!(per_key_packets(&full_colors(),0).is_err());
     }
     #[test]
+    fn matches_official_w_red_capture_vector() {
+        let mut colors=full_colors();
+        for key in &mut colors { key.color=if key.index==39 { "FF0000".into() } else { "000000".into() }; }
+        let packets=per_key_packets(&colors,5).unwrap();
+        assert_eq!(&packets[0][1..5], &[0x05,0x10,0x00,0x80]);
+        assert_eq!(packets[0][13],5);
+        assert_eq!(packets[0][32],0x99);
+        // W is LED 39: table byte 156, in chunk 5 at payload offset 16.
+        assert_eq!(&packets[6][20..24], &[0x27,0xff,0x00,0x00]);
+        assert_eq!(&packets[21][1..4], &[0x14,0x10,0x14]);
+        assert_eq!(&packets[21][18..20], &[0xaa,0x55]);
+    }
+    #[test]
     fn matches_working_python_protocol() {
         let p = rgb_packets(1, "123456", 5, 2, false, 0).unwrap();
         assert_eq!(p[0][1], 15); assert_eq!(p[0][32], 15);
