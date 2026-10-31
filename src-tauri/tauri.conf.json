@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AULA Studio",
+  "version": "0.2.0",
+  "identifier": "com.aulastudio.keyboard",
+  "build": {
+    "beforeDevCommand": "node scripts/npm.mjs run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "node scripts/npm.mjs run build",
+    "frontendDist": "../web-dist"
+  },
+  "app": {
+    "windows": [{ "title": "AULA Studio", "width": 1240, "height": 870, "minWidth": 940, "minHeight": 700, "backgroundColor": "#f4f2ed", "center": true }],
+    "security": { "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:" }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "shortDescription": "Make your F75 Max feel like you.",
+    "resources": ["../research/LICENSE.upstream", "../research/LICENSE.perkey"],
+    "windows": { "nsis": { "installMode": "currentUser" } },
+    "macOS": { "minimumSystemVersion": "10.15" }
+  }
+}
