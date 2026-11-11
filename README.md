@@ -110,31 +110,41 @@ npm run desktop
 
 Build each native package on its target OS. The Mac does not cross-compile Linux or Windows packages. The release workflow builds Windows x64, Apple Silicon macOS and Linux x64.
 
-### Continue development on Linux
+### Build on Bazzite
 
-On Ubuntu 22.04 or a compatible distribution, install the [Tauri Linux prerequisites](https://v2.tauri.app/start/prerequisites/) and Rust stable. For Ubuntu/Debian:
+Bazzite keeps its base system read-only and provides Podman/Distrobox for development containers. The project script builds inside a disposable Ubuntu-compatible container; it does not install Node, Rust, GTK or build packages into the Bazzite host. Rust, npm caches and the AppImage stay under this project folder (`.tools/` and `dist/`). Podman keeps its downloaded base image in its normal system-managed image store.
 
-```sh
-sudo apt update
-sudo apt install build-essential curl file libayatana-appindicator3-dev libfuse2 libssl-dev libudev-dev librsvg2-dev libwebkit2gtk-4.1-dev libxdo-dev wget
-```
-
-Then clone the repository, or unpack `AULA-Studio-source.zip`:
+Clone the repository, or unpack `AULA-Studio-source.zip`, then open a terminal in the project folder:
 
 ```sh
 git clone https://github.com/diamachi/aula-studio.git
 cd aula-studio
-npm ci
-npm run desktop
+chmod +x scripts/build-linux-bazzite.sh
+./scripts/build-linux-bazzite.sh
 ```
 
-To build an AppImage, run `npm run test:ui`, `cargo test --locked --manifest-path src-tauri/Cargo.toml`, then:
+The first run needs internet access and downloads the container image and build dependencies. It checks the UI and Rust code, then creates:
 
 ```sh
-npm run tauri -- build --bundles appimage
+dist/AULA-Studio-Linux-x86_64.AppImage
 ```
 
-The AppImage is under `src-tauri/target/release/bundle/appimage/`. Install the included udev rule from `src-tauri/linux/99-aula-studio.rules` to use the F75 Max without running the app as root. Linux HID behavior still needs testing on a physical keyboard.
+To run the app, make it executable and launch it:
+
+```sh
+chmod +x dist/AULA-Studio-Linux-x86_64.AppImage
+./dist/AULA-Studio-Linux-x86_64.AppImage
+```
+
+For keyboard access without running the app as root, install the udev rule and reconnect the keyboard:
+
+```sh
+sudo install -Dm644 src-tauri/linux/99-aula-studio.rules /etc/udev/rules.d/99-aula-studio.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+This optional device permission step changes the Bazzite host; see the [Bazzite container guide](https://docs.bazzite.gg/Installing_and_Managing_Software/Containers/) and [Distrobox guide](https://docs.bazzite.gg/Installing_and_Managing_Software/Distrobox/) for the container model. Linux HID behavior still needs testing on a physical keyboard.
 
 ### Continue development on your Mac
 
