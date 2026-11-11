@@ -4,7 +4,7 @@ AULA Studio uses React/TypeScript for the interface and Tauri 2/Rust with HIDAPI
 
 ## Setup
 
-Install Node.js 22+, Rust stable and the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/). Windows needs Microsoft C++ Build Tools and WebView2. macOS needs Xcode command line tools.
+Install Node.js 22+, Rust stable and the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/). Windows needs Microsoft C++ Build Tools and WebView2. macOS needs Xcode command line tools. Linux needs WebKitGTK 4.1 and the distribution's GTK, AppIndicator, OpenSSL, librsvg and HID development packages.
 
 Windows PowerShell:
 
@@ -18,6 +18,13 @@ Apple Silicon macOS:
 
 ```sh
 sh scripts/setup-macos.sh
+```
+
+Ubuntu/Debian Linux:
+
+```sh
+sudo apt update
+sudo apt install build-essential curl file libayatana-appindicator3-dev libfuse2 libssl-dev libudev-dev librsvg2-dev libwebkit2gtk-4.1-dev libxdo-dev wget
 ```
 
 Check tools with `node scripts/doctor.mjs`. The repository does not bundle Node, Rust, C++ compilers, Xcode or dependency caches. `scripts/npm.mjs` uses the workspace npm bootstrap under `.tools/package` if present, otherwise the system npm. A copied source ZIP does not include that local bootstrap.
@@ -56,13 +63,21 @@ Apple Silicon app/DMG:
 sh scripts/build-macos.sh
 ```
 
+Linux x64 AppImage:
+
+```sh
+npm run tauri -- build --bundles appimage
+```
+
+The AppImage is in `src-tauri/target/release/bundle/appimage/`. Install `src-tauri/linux/99-aula-studio.rules` under `/etc/udev/rules.d/` and reconnect the keyboard to grant the active desktop user HID access.
+
 For a native build without packaging:
 
 ```sh
 npm run tauri -- build --no-bundle
 ```
 
-Native outputs are under `src-tauri/target/release`; installers and DMGs are under its `bundle` directory. The build uses the host architecture, so use an Apple Silicon host for the supported Mac package.
+Native outputs are under `src-tauri/target/release`; installers, DMGs and AppImages are under its `bundle` directory. The build uses the host architecture, so use an Apple Silicon host for the Mac package and Linux x64 for the AppImage.
 
 ## Source archive
 

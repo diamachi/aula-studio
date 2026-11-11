@@ -2,7 +2,7 @@
 
 A small desktop app for the **AULA F75 Max**. Change RGB effects, paint individual keys, check battery percentage, and put an image or GIF on the keyboard’s mini display.
 
-The app uses a native window on Windows and Apple Silicon macOS, built with Tauri, React and Rust. Normal use needs no terminal, external browser, Python installation or separately installed Node runtime.
+The app uses a native window on Windows, Apple Silicon macOS and Linux, built with Tauri, React and Rust. Normal use needs no external browser, Python installation or separately installed Node runtime.
 
 [Download releases](https://github.com/diamachi/aula-studio/releases) · [Build and development guide](docs/DEVELOPMENT.md) · [Release guide](docs/PUBLISHING.md)
 
@@ -78,6 +78,7 @@ Lighting selections and the keyboard illustration are **editor preferences and p
 
 - **Windows x64:** download the setup EXE from [Releases](https://github.com/diamachi/aula-studio/releases), or use `AULA-Studio-Windows-x64.exe` for the portable app. Microsoft WebView2 is required.
 - **Mac, Apple Silicon / M-series:** open the release `aarch64.dmg`, drag **AULA Studio** into Applications, and open it. The app is not notarized. If macOS blocks the unsigned app, run `xattr -dr com.apple.quarantine /Applications/AULA\ Studio.app` in Terminal and open it again. When the USB receiver is connected, AULA Studio requests Input Monitoring access if needed; approve the macOS prompt. If access was already denied, enable AULA Studio under **System Settings → Privacy & Security → Input Monitoring**, then quit and reopen it.
+- **Linux x64:** download the `.AppImage` from [Releases](https://github.com/diamachi/aula-studio/releases), make it executable with `chmod +x ./*.AppImage`, then run it with `./*.AppImage`. The desktop needs WebKitGTK 4.1 and FUSE 2 for AppImage mounting. To access the keyboard without root, install `src-tauri/linux/99-aula-studio.rules` under `/etc/udev/rules.d/`, reload udev rules and reconnect the keyboard. The rule grants the active desktop user access to the F75 Max receiver and wired display endpoints.
 
 For lighting and battery, plug in the USB receiver, switch the keyboard to **2.4G**, and press a key to wake it. Close the official driver and other configuration apps before connecting. For the display and clock, use a USB data cable and select **wired mode**.
 
@@ -87,7 +88,7 @@ For lighting and battery, plug in the USB receiver, switch the keyboard to **2.4
 | USB data cable, wired mode | Image/GIF display uploads and clock sync. |
 | Bluetooth | Configuration is not supported. |
 
-Lighting, per-key colors, battery and image/GIF playback have been checked on a physical F75 Max on Windows. On Apple Silicon macOS, receiver interface detection and battery access have also been confirmed. Clock commands were acknowledged by the keyboard. Intel Mac and Linux desktop packages are not provided; other keyboard models and firmware batches are not verified.
+Lighting, per-key colors, battery and image/GIF playback have been checked on a physical F75 Max on Windows. On Apple Silicon macOS, receiver interface detection and battery access have also been confirmed. Clock commands were acknowledged by the keyboard. Linux packaging is provided, but Linux hardware access has not been physically verified. Intel Mac and other keyboard models and firmware batches are not verified.
 
 ## Build from source
 
@@ -98,6 +99,7 @@ The repository and source ZIP include dependency lockfiles, icons, platform setu
 | Frontend development | Node.js 22+ and npm. |
 | Windows desktop | Windows x64, Rust stable, Microsoft C++ Build Tools and WebView2. |
 | Mac desktop / DMG | Apple Silicon Mac, Rust stable and Xcode command line tools. |
+| Linux desktop / AppImage | Linux x64, Rust stable, WebKitGTK 4.1 and the Tauri Linux prerequisites listed below. |
 
 See the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/) and the [development guide](docs/DEVELOPMENT.md) for setup scripts, portable-tool behavior, tests and output locations.
 
@@ -106,7 +108,33 @@ npm ci
 npm run desktop
 ```
 
-Build each native package on its target OS. The Mac does not cross-compile the Windows executable, and the release workflow builds only Windows x64 and macOS ARM64.
+Build each native package on its target OS. The Mac does not cross-compile Linux or Windows packages. The release workflow builds Windows x64, Apple Silicon macOS and Linux x64.
+
+### Continue development on Linux
+
+On Ubuntu 22.04 or a compatible distribution, install the [Tauri Linux prerequisites](https://v2.tauri.app/start/prerequisites/) and Rust stable. For Ubuntu/Debian:
+
+```sh
+sudo apt update
+sudo apt install build-essential curl file libayatana-appindicator3-dev libfuse2 libssl-dev libudev-dev librsvg2-dev libwebkit2gtk-4.1-dev libxdo-dev wget
+```
+
+Then clone the repository, or unpack `AULA-Studio-source.zip`:
+
+```sh
+git clone https://github.com/diamachi/aula-studio.git
+cd aula-studio
+npm ci
+npm run desktop
+```
+
+To build an AppImage, run `npm run test:ui`, `cargo test --locked --manifest-path src-tauri/Cargo.toml`, then:
+
+```sh
+npm run tauri -- build --bundles appimage
+```
+
+The AppImage is under `src-tauri/target/release/bundle/appimage/`. Install the included udev rule from `src-tauri/linux/99-aula-studio.rules` to use the F75 Max without running the app as root. Linux HID behavior still needs testing on a physical keyboard.
 
 ### Continue development on your Mac
 
@@ -162,9 +190,9 @@ On either machine, use `git pull` before resuming work on a clean checkout and c
 
 ### GitHub Actions
 
-**Actions → Desktop builds → Run workflow** builds both platforms and saves downloadable artifacts. Pushing a `v*` tag also publishes release assets after both platform builds succeed. Normal pushes to `main` do not trigger release builds.
+**Actions → Desktop builds → Run workflow** builds Windows x64, Apple Silicon macOS and Linux x64, then saves downloadable artifacts. Pushing a `v*` tag also publishes release assets after all three platform builds succeed. Normal pushes to `main` do not trigger release builds.
 
-The release includes Windows setup and portable executables, an M-series Mac DMG, and a source ZIP. See the [release guide](docs/PUBLISHING.md).
+The release includes Windows setup and portable executables, an M-series Mac DMG, a Linux AppImage and a source ZIP. See the [release guide](docs/PUBLISHING.md).
 
 ## Project layout
 
@@ -174,7 +202,7 @@ src-tauri/src/   Rust HID transport, packet encoding and image conversion
 scripts/         Platform setup, build, source packaging and UI checks
 docs/            Development, release and USB recording guides
 research/        Protocol evidence, compatibility limits and upstream licenses
-.github/         Windows and Apple Silicon build/release workflow
+.github/         Windows, Apple Silicon and Linux build/release workflow
 .tools/          Local tools and research inputs (ignored)
 web-dist/        Generated frontend output (ignored)
 dist/            Generated distribution files (ignored)

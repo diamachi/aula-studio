@@ -1,0 +1,4 @@
+# Grant the active desktop user access to the F75 Max receiver and wired HID
+# endpoints without requiring AULA Studio to run as root.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="024f", TAG+="uaccess"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0c45", ATTRS{idProduct}=="800a", TAG+="uaccess"
